@@ -174,6 +174,179 @@ WHERE p.`title` = 'A+B Problem'
   AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 2);
 
 -- ------------------------------------------------------------
+-- 7.1 示例题库扩展：5 道基础题（每题 5 个测试点，每个 20 分）
+-- ------------------------------------------------------------
+INSERT INTO `problem` (`title`, `description`, `samples`, `difficulty`, `time_limit_ms`, `memory_limit_mb`, `visible`, `created_by`)
+SELECT
+  '数列求和',
+  '## 题目描述\n给定 n 个整数，求它们的和。\n\n## 输入格式\n第一行一个整数 n（1 ≤ n ≤ 100000）。\n第二行 n 个整数，以空格分隔，绝对值不超过 10^9。\n\n## 输出格式\n输出一个整数，表示这 n 个数的和。',
+  JSON_ARRAY(JSON_OBJECT('input', '3\n1 2 3\n', 'output', '6\n')),
+  1, 1000, 256, 1,
+  (SELECT `id` FROM `user` WHERE `username` = 'admin' LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM `problem` WHERE `title` = '数列求和');
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 1, '1\n5\n', '5\n', 20 FROM `problem` p
+WHERE p.`title` = '数列求和'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 1);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 2, '3\n1 2 3\n', '6\n', 20 FROM `problem` p
+WHERE p.`title` = '数列求和'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 2);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 3, '5\n-1 -2 -3 -4 -5\n', '-15\n', 20 FROM `problem` p
+WHERE p.`title` = '数列求和'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 3);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 4, '4\n0 0 0 0\n', '0\n', 20 FROM `problem` p
+WHERE p.`title` = '数列求和'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 4);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 5, '3\n1000000000 1000000000 1000000000\n', '3000000000\n', 20 FROM `problem` p
+WHERE p.`title` = '数列求和'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 5);
+
+INSERT INTO `problem` (`title`, `description`, `samples`, `difficulty`, `time_limit_ms`, `memory_limit_mb`, `visible`, `created_by`)
+SELECT
+  '求最大值',
+  '## 题目描述\n给定 n 个整数，输出其中的最大值。\n\n## 输入格式\n第一行一个整数 n（1 ≤ n ≤ 100000）。\n第二行 n 个整数，以空格分隔，绝对值不超过 10^9。\n\n## 输出格式\n输出一个整数，表示这 n 个数中的最大值。',
+  JSON_ARRAY(JSON_OBJECT('input', '5\n3 1 4 1 5\n', 'output', '5\n')),
+  1, 1000, 256, 1,
+  (SELECT `id` FROM `user` WHERE `username` = 'admin' LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM `problem` WHERE `title` = '求最大值');
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 1, '1\n42\n', '42\n', 20 FROM `problem` p
+WHERE p.`title` = '求最大值'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 1);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 2, '5\n3 1 4 1 5\n', '5\n', 20 FROM `problem` p
+WHERE p.`title` = '求最大值'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 2);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 3, '4\n-5 -2 -9 -7\n', '-2\n', 20 FROM `problem` p
+WHERE p.`title` = '求最大值'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 3);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 4, '3\n0 0 0\n', '0\n', 20 FROM `problem` p
+WHERE p.`title` = '求最大值'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 4);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 5, '2\n-1000000000 1000000000\n', '1000000000\n', 20 FROM `problem` p
+WHERE p.`title` = '求最大值'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 5);
+
+INSERT INTO `problem` (`title`, `description`, `samples`, `difficulty`, `time_limit_ms`, `memory_limit_mb`, `visible`, `created_by`)
+SELECT
+  '回文串判断',
+  '## 题目描述\n给定一个只包含小写字母的字符串，判断它是否为回文串。回文串指正着读和倒着读完全相同的字符串。\n\n## 输入格式\n一行一个字符串，长度不超过 1000，不含空格。\n\n## 输出格式\n如果是回文串输出 YES，否则输出 NO。',
+  JSON_ARRAY(JSON_OBJECT('input', 'level\n', 'output', 'YES\n')),
+  2, 1000, 256, 1,
+  (SELECT `id` FROM `user` WHERE `username` = 'admin' LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM `problem` WHERE `title` = '回文串判断');
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 1, 'level\n', 'YES\n', 20 FROM `problem` p
+WHERE p.`title` = '回文串判断'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 1);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 2, 'abc\n', 'NO\n', 20 FROM `problem` p
+WHERE p.`title` = '回文串判断'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 2);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 3, 'a\n', 'YES\n', 20 FROM `problem` p
+WHERE p.`title` = '回文串判断'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 3);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 4, 'abba\n', 'YES\n', 20 FROM `problem` p
+WHERE p.`title` = '回文串判断'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 4);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 5, 'abca\n', 'NO\n', 20 FROM `problem` p
+WHERE p.`title` = '回文串判断'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 5);
+
+INSERT INTO `problem` (`title`, `description`, `samples`, `difficulty`, `time_limit_ms`, `memory_limit_mb`, `visible`, `created_by`)
+SELECT
+  '斐波那契数列',
+  '## 题目描述\n斐波那契数列定义：f(1)=1，f(2)=1，当 n≥3 时 f(n)=f(n-1)+f(n-2)。求第 n 项。\n\n## 输入格式\n一个整数 n（1 ≤ n ≤ 50）。\n\n## 输出格式\n输出 f(n)。结果可能超过 32 位整数范围，请使用 64 位整数。',
+  JSON_ARRAY(JSON_OBJECT('input', '10\n', 'output', '55\n')),
+  2, 1000, 256, 1,
+  (SELECT `id` FROM `user` WHERE `username` = 'admin' LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM `problem` WHERE `title` = '斐波那契数列');
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 1, '1\n', '1\n', 20 FROM `problem` p
+WHERE p.`title` = '斐波那契数列'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 1);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 2, '2\n', '1\n', 20 FROM `problem` p
+WHERE p.`title` = '斐波那契数列'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 2);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 3, '10\n', '55\n', 20 FROM `problem` p
+WHERE p.`title` = '斐波那契数列'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 3);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 4, '30\n', '832040\n', 20 FROM `problem` p
+WHERE p.`title` = '斐波那契数列'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 4);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 5, '50\n', '12586269025\n', 20 FROM `problem` p
+WHERE p.`title` = '斐波那契数列'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 5);
+
+INSERT INTO `problem` (`title`, `description`, `samples`, `difficulty`, `time_limit_ms`, `memory_limit_mb`, `visible`, `created_by`)
+SELECT
+  '排序去重',
+  '## 题目描述\n给定 n 个整数，去掉重复的数后按从小到大排序输出。\n\n## 输入格式\n第一行一个整数 n（1 ≤ n ≤ 1000）。\n第二行 n 个整数，以空格分隔，绝对值不超过 10^9。\n\n## 输出格式\n一行，输出去重并升序排列后的整数，以空格分隔。',
+  JSON_ARRAY(JSON_OBJECT('input', '5\n3 1 2 3 1\n', 'output', '1 2 3\n')),
+  2, 1000, 256, 1,
+  (SELECT `id` FROM `user` WHERE `username` = 'admin' LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM `problem` WHERE `title` = '排序去重');
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 1, '5\n3 1 2 3 1\n', '1 2 3\n', 20 FROM `problem` p
+WHERE p.`title` = '排序去重'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 1);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 2, '1\n7\n', '7\n', 20 FROM `problem` p
+WHERE p.`title` = '排序去重'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 2);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 3, '4\n-1 -1 -2 0\n', '-2 -1 0\n', 20 FROM `problem` p
+WHERE p.`title` = '排序去重'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 3);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 4, '3\n1000000000 -1000000000 0\n', '-1000000000 0 1000000000\n', 20 FROM `problem` p
+WHERE p.`title` = '排序去重'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 4);
+
+INSERT INTO `test_case` (`problem_id`, `order_no`, `input`, `expected_output`, `score`)
+SELECT p.`id`, 5, '2\n5 5\n', '5\n', 20 FROM `problem` p
+WHERE p.`title` = '排序去重'
+  AND NOT EXISTS (SELECT 1 FROM `test_case` t WHERE t.`problem_id` = p.`id` AND t.`order_no` = 5);
+
+-- ------------------------------------------------------------
 -- 8. AI 助手相关配置（应用配置项，非数据库存储，此处仅作说明）
 --   OJ_AI_ENABLED=true
 --   OJ_AI_BASE_URL=              # OpenAI 兼容端点，禁止硬编码进仓库

@@ -2,6 +2,8 @@ package com.example.oj.security;
 
 import com.example.oj.common.ErrorCode;
 import com.example.oj.common.Result;
+import com.example.oj.entity.User;
+import com.example.oj.mapper.UserMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -25,10 +27,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
     private final ObjectMapper objectMapper;
+    private final UserMapper userMapper;
 
-    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, ObjectMapper objectMapper) {
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider,
+                                   ObjectMapper objectMapper,
+                                   UserMapper userMapper) {
         this.tokenProvider = tokenProvider;
         this.objectMapper = objectMapper;
+        this.userMapper = userMapper;
     }
 
     @Override
@@ -45,9 +51,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             Claims claims = tokenProvider.parse(token);
             Long userId = Long.valueOf(claims.getSubject());
-            String role = claims.get("role", String.class);
+            User user = userMapper.selectById(userId);
+            if (user == null) {
+                writeError(response, ErrorCode.INVALID_TOKEN);
+                return;
+            }
+            if (user.getStatus() != null && user.getStatus() == 0) {
+                writeError(response, ErrorCode.FORBIDDEN, "账号已被禁用");
+                return;
+            }
             var authentication = new UsernamePasswordAuthenticationToken(
-                    userId, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+                    userId, null, List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole())));
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (ExpiredJwtException ex) {
             writeError(response, ErrorCode.TOKEN_EXPIRED);
@@ -61,8 +75,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void writeError(HttpServletResponse response, ErrorCode errorCode) throws IOException {
+        writeError(response, errorCode, errorCode.getMessage());
+    }
+
+    private void writeError(HttpServletResponse response, ErrorCode errorCode, String message)
+            throws IOException {
         response.setStatus(errorCode.getHttpStatus());
         response.setContentType("application/json;charset=UTF-8");
-        objectMapper.writeValue(response.getWriter(), Result.fail(errorCode));
+        objectMapper.writeValue(response.getWriter(), Result.fail(errorCode, message));
     }
 }

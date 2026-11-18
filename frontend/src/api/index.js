@@ -31,6 +31,12 @@ export const adminApi = {
   replaceTestCases: (id, payload) => http.post(`/admin/problems/${id}/test-cases`, payload)
 }
 
+export const adminUserApi = {
+  list: (params) => http.get('/admin/users', { params }),
+  updateStatus: (id, status) => http.patch(`/admin/users/${id}/status`, { status }),
+  resetPassword: (id) => http.post(`/admin/users/${id}/reset-password`)
+}
+
 export const TERMINAL_STATUSES = ['AC', 'WA', 'TLE', 'MLE', 'RE', 'CE', 'REJECTED']
 
 export function isTerminal(status) {

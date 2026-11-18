@@ -26,6 +26,12 @@
           <svg viewBox="0 0 24 24" class="ico"><path d="M12 3l8 4v6c0 4-3.4 7.2-8 8-4.6-.8-8-4-8-8V7z" /></svg>
           <span>题目管理</span>
         </RouterLink>
+        <RouterLink v-if="auth.isAdmin" to="/admin/users" class="nav-item">
+          <svg viewBox="0 0 24 24" class="ico">
+            <path d="M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6" />
+          </svg>
+          <span>用户管理</span>
+        </RouterLink>
       </nav>
 
       <div class="side-foot">
