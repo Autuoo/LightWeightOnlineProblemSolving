@@ -6,6 +6,7 @@ public record AdminProblemItem(
         Long id,
         String title,
         Integer difficulty,
+        String tags,
         Integer visible,
         Integer timeLimitMs,
         Integer memoryLimitMb,

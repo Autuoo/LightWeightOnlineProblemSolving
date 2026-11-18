@@ -17,6 +17,7 @@ public class Problem {
     private String description;
     private String samples;
     private Integer difficulty;
+    private String tags;
     private Integer timeLimitMs;
     private Integer memoryLimitMb;
     private Integer visible;

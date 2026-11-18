@@ -27,7 +27,10 @@ public record ProblemUpsertRequest(
         @Min(value = 16, message = "内存限制不能小于 16MB")
         Integer memoryLimitMb,
 
-        Integer visible) {
+        Integer visible,
+
+        @Size(max = 128, message = "标签总长度不能超过 128 字符")
+        String tags) {
 
     public record Sample(String input, String output) {
     }

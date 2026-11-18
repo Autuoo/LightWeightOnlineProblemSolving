@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS `problem` (
   `description`     MEDIUMTEXT      NOT NULL                COMMENT 'Markdown 题面',
   `samples`         JSON            NULL                    COMMENT '样例：[{input,output}]',
   `difficulty`      TINYINT         NOT NULL DEFAULT 1      COMMENT '1 简单 2 中等 3 困难',
+  `tags`            VARCHAR(128)    NOT NULL DEFAULT ''     COMMENT '标签，逗号分隔，如 数组,字符串',
   `time_limit_ms`   INT             NOT NULL DEFAULT 1000   COMMENT '基准时间限制',
   `memory_limit_mb` INT             NOT NULL DEFAULT 256    COMMENT '内存限制',
   `visible`         TINYINT         NOT NULL DEFAULT 1      COMMENT '1 可见 0 隐藏（软删除）',
@@ -248,6 +249,16 @@ SELECT
   (SELECT `id` FROM `user` WHERE `username` = 'admin' LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM `problem` WHERE `title` = '排序去重');
 
+
+-- ------------------------------------------------------------
+-- 示例题标签（用于个人中心的做题方向统计）
+-- ------------------------------------------------------------
+UPDATE `problem` SET `tags` = '基础运算,数学' WHERE `title` = 'A+B Problem';
+UPDATE `problem` SET `tags` = '数组,基础运算' WHERE `title` = '数列求和';
+UPDATE `problem` SET `tags` = '数组,遍历' WHERE `title` = '求最大值';
+UPDATE `problem` SET `tags` = '字符串,双指针' WHERE `title` = '回文串判断';
+UPDATE `problem` SET `tags` = '数学,递推' WHERE `title` = '斐波那契数列';
+UPDATE `problem` SET `tags` = '数组,排序' WHERE `title` = '排序去重';
 
 -- ------------------------------------------------------------
 -- 隐藏测试点（由 scripts/gen_test_cases.py 生成，样例不参与评分）

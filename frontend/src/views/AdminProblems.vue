@@ -107,6 +107,11 @@
           </div>
 
           <label class="field">
+            <span class="label">标签（逗号分隔，用于做题方向统计）</span>
+            <input v-model.trim="form.tags" class="input" placeholder="数组,字符串" />
+          </label>
+
+          <label class="field">
             <span class="label">样例（每行一个：输入 ||| 输出）</span>
             <textarea v-model="samplesText" class="input textarea mono" rows="3" placeholder="1 2 ||| 3" />
           </label>
@@ -191,7 +196,8 @@ const form = reactive({
   difficulty: 1,
   timeLimitMs: 1000,
   memoryLimitMb: 256,
-  visible: true
+  visible: true,
+  tags: ''
 })
 
 const samplesText = ref('')
@@ -221,7 +227,8 @@ function buildPayload() {
     difficulty: form.difficulty,
     timeLimitMs: form.timeLimitMs,
     memoryLimitMb: form.memoryLimitMb,
-    visible: form.visible ? 1 : 0
+    visible: form.visible ? 1 : 0,
+    tags: form.tags
   }
 }
 
@@ -285,6 +292,7 @@ function resetForm() {
   form.timeLimitMs = 1000
   form.memoryLimitMb = 256
   form.visible = true
+  form.tags = ''
   samplesText.value = ''
   problemError.value = ''
   problemOk.value = ''
@@ -326,6 +334,7 @@ async function editProblem(id) {
     form.timeLimitMs = data.timeLimitMs ?? 1000
     form.memoryLimitMb = data.memoryLimitMb ?? 256
     form.visible = data.visible === 1
+    form.tags = data.tags || ''
     samplesText.value = (data.samples || [])
       .map((sample) => `${sample.input || ''} ||| ${sample.output || ''}`)
       .join('\n')

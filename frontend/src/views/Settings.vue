@@ -168,6 +168,32 @@
             </button>
           </template>
         </div>
+
+        <div class="dimension-grid">
+          <div class="dimension">
+            <div class="dimension-head">按难度</div>
+            <div v-if="!stats.byDifficulty.length" class="dimension-empty">近 {{ rangeDays }} 天暂无提交</div>
+            <div v-for="item in stats.byDifficulty" :key="item.key" class="dim-row">
+              <span class="dim-label">{{ item.label }}</span>
+              <span class="dim-bar"><i :style="{ width: dimWidth(item) }" /></span>
+              <span class="dim-meta mono">
+                {{ item.submissions }} 提交 · {{ item.solvedProblems }} 题通过
+              </span>
+            </div>
+          </div>
+
+          <div class="dimension">
+            <div class="dimension-head">按方向</div>
+            <div v-if="!stats.byTag.length" class="dimension-empty">近 {{ rangeDays }} 天暂无提交</div>
+            <div v-for="item in stats.byTag" :key="item.key" class="dim-row">
+              <span class="dim-label tag">{{ item.label }}</span>
+              <span class="dim-bar tag-bar"><i :style="{ width: dimWidth(item) }" /></span>
+              <span class="dim-meta mono">
+                {{ item.submissions }} 提交 · {{ item.solvedProblems }} 题通过
+              </span>
+            </div>
+          </div>
+        </div>
       </section>
     </div>
 
@@ -402,7 +428,9 @@ const profileError = ref('')
 
 const stats = reactive({
   today: { submissions: 0, accepted: 0, acceptanceRate: 0, solvedProblems: 0 },
-  trend: []
+  trend: [],
+  byDifficulty: [],
+  byTag: []
 })
 const chartReady = ref(false)
 
@@ -588,6 +616,8 @@ async function loadStats() {
     const data = await statsApi.me(rangeDays.value)
     stats.today = data.today
     stats.trend = data.trend || []
+    stats.byDifficulty = data.byDifficulty || []
+    stats.byTag = data.byTag || []
     requestAnimationFrame(() => {
       chartReady.value = true
     })
@@ -603,6 +633,19 @@ function changeRange(days) {
   selectedDate.value = ''
   dayDetail.value = null
   loadStats()
+}
+
+const dimensionMax = computed(() =>
+  Math.max(
+    1,
+    ...stats.byDifficulty.map((item) => item.submissions),
+    ...stats.byTag.map((item) => item.submissions)
+  )
+)
+
+function dimWidth(item) {
+  if (!item.submissions) return '0%'
+  return `${Math.max((item.submissions / dimensionMax.value) * 100, 6)}%`
 }
 
 function pointRate(point) {
@@ -1494,4 +1537,70 @@ h1 {
     display: none;
   }
 }
+.dimension-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.dimension-head {
+  margin-bottom: 8px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+.dimension-empty {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.dim-row {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.dim-row:last-child {
+  margin-bottom: 0;
+}
+
+.dim-label {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dim-bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-elev-2);
+  overflow: hidden;
+}
+
+.dim-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(45, 212, 191, 0.5), var(--accent));
+  transition: width 0.5s cubic-bezier(0.22, 0.68, 0.35, 1);
+}
+
+.tag-bar i {
+  background: linear-gradient(90deg, rgba(96, 165, 250, 0.5), var(--info));
+}
+
+.dim-meta {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
 </style>

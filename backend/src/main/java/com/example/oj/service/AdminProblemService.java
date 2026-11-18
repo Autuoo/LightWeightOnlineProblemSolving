@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,7 @@ public class AdminProblemService {
                         problem.getId(),
                         problem.getTitle(),
                         problem.getDifficulty(),
+                        problem.getTags(),
                         problem.getVisible(),
                         problem.getTimeLimitMs(),
                         problem.getMemoryLimitMb(),
@@ -89,6 +91,7 @@ public class AdminProblemService {
                 problem.getDescription(),
                 readSamples(problem.getSamples()),
                 problem.getDifficulty(),
+                problem.getTags(),
                 problem.getTimeLimitMs(),
                 problem.getMemoryLimitMb(),
                 problem.getVisible(),
@@ -144,6 +147,19 @@ public class AdminProblemService {
         problem.setTimeLimitMs(request.timeLimitMs() == null ? 1000 : request.timeLimitMs());
         problem.setMemoryLimitMb(request.memoryLimitMb() == null ? 256 : request.memoryLimitMb());
         problem.setVisible(request.visible() == null ? 1 : request.visible());
+        problem.setTags(normalizeTags(request.tags()));
+    }
+
+    private static String normalizeTags(String tags) {
+        if (tags == null || tags.isBlank()) {
+            return "";
+        }
+        String normalized = Arrays.stream(tags.split("[,，]"))
+                .map(String::trim)
+                .filter(tag -> !tag.isEmpty())
+                .distinct()
+                .collect(Collectors.joining(","));
+        return normalized.length() > 128 ? normalized.substring(0, 128) : normalized;
     }
 
     private String writeSamples(List<ProblemUpsertRequest.Sample> samples) {

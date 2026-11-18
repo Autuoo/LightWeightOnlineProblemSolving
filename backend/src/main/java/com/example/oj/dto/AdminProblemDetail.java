@@ -8,6 +8,7 @@ public record AdminProblemDetail(
         String description,
         List<ProblemUpsertRequest.Sample> samples,
         Integer difficulty,
+        String tags,
         Integer timeLimitMs,
         Integer memoryLimitMb,
         Integer visible,
