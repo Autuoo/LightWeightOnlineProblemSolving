@@ -41,21 +41,27 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in records" :key="item.id" class="row" @click="open(item.id)">
+          <tr
+            v-for="item in records"
+            :key="item.id"
+            class="row"
+            :class="{ flagged: item.suspicious && auth.isAdmin }"
+            @click="open(item.id)"
+          >
             <td class="c-id mono">{{ item.id }}</td>
-            <td class="title-cell">{{ item.problemTitle || `题目 ${item.problemId}` }}</td>
+            <td class="title-cell">
+              <span class="title-text">{{ item.problemTitle || `题目 ${item.problemId}` }}</span>
+              <span
+                v-if="item.suspicious && auth.isAdmin"
+                class="flag"
+                title="疑似打表/硬编码，仅标记，不影响得分"
+              >
+                可疑
+              </span>
+            </td>
             <td v-if="auth.isAdmin" class="c-user mono">{{ item.username }}</td>
             <td class="c-status">
-              <div class="status-stack">
-                <StatusBadge :status="item.status" />
-                <span
-                  v-if="item.suspicious && auth.isAdmin"
-                  class="flag"
-                  title="疑似打表/硬编码，仅标记，不影响得分"
-                >
-                  可疑
-                </span>
-              </div>
+              <StatusBadge :status="item.status" />
             </td>
             <td class="c-lang mono">{{ item.language }}</td>
             <td class="c-score mono">{{ item.score ?? 0 }}</td>
@@ -183,14 +189,8 @@ h1 {
   gap: 8px;
 }
 
-.status-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-
 .flag {
+  flex: 0 0 auto;
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 10px;
@@ -237,7 +237,29 @@ h1 {
 }
 
 .title-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   font-weight: 550;
+}
+
+.title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row.flagged {
+  background: rgba(251, 191, 36, 0.04);
+}
+
+.row.flagged:hover {
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.row.flagged td:first-child {
+  box-shadow: inset 3px 0 0 rgba(251, 191, 36, 0.9);
 }
 
 .c-id {
@@ -247,7 +269,7 @@ h1 {
 }
 
 .c-status {
-  width: 170px;
+  width: 150px;
 }
 
 .c-user {

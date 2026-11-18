@@ -19,6 +19,7 @@ public record SubmissionDetail(
         String suspiciousReason,
         LocalDateTime createdAt,
         LocalDateTime finishedAt,
+        boolean owner,
         List<CaseView> cases) {
 
     public record CaseView(

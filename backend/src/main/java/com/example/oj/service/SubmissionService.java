@@ -151,6 +151,7 @@ public class SubmissionService {
                 submission.getSuspiciousReason(),
                 submission.getCreatedAt(),
                 submission.getFinishedAt(),
+                submission.getUserId().equals(userId),
                 cases);
     }
 

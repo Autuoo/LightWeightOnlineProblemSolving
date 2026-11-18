@@ -72,7 +72,15 @@
             <pre class="compile mono">{{ detail.errorMessage }}</pre>
           </div>
 
-          <HintPanel :submission-id="detail.id" :enabled="finished" :status="detail.status" />
+          <HintPanel
+            v-if="detail.owner"
+            :submission-id="detail.id"
+            :enabled="finished"
+            :status="detail.status"
+          />
+          <div v-else class="hint-owner-note">
+            AI 助教仅对提交本人开放；管理员查看他人提交时不提供提示。
+          </div>
         </section>
 
         <section class="right rise" style="animation-delay: 80ms">
@@ -439,5 +447,15 @@ h1 {
 .suspicious-reason {
   font-size: 11.5px;
   color: var(--text-dim);
+}
+.hint-owner-note {
+  margin-top: 20px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px dashed var(--line);
+  background: var(--bg-sunken);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-faint);
 }
 </style>
