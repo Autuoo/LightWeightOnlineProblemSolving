@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 import { submissionApi, isTerminal } from '../api'
+import { WS_BASE } from '../api/config'
 import { useAuthStore } from './auth'
 
 let stompClient = null
@@ -69,11 +70,7 @@ export const useSubmissionStore = defineStore('submission', {
       const auth = useAuthStore()
 
       stompClient = new Client({
-        webSocketFactory: () =>
-          new SockJS(
-            import.meta.env.VITE_WS_BASE ||
-              `${window.location.protocol}//${window.location.hostname}:8081/ws`
-          ),
+        webSocketFactory: () => new SockJS(WS_BASE),
         connectHeaders: auth.token ? { Authorization: `Bearer ${auth.token}` } : {},
         reconnectDelay: 4000,
         debug: () => {},

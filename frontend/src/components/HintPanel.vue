@@ -54,6 +54,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { API_BASE } from '../api/config'
 import { useAuthStore } from '../stores/auth'
 
 const props = defineProps({
@@ -94,10 +95,7 @@ async function ask() {
   traces.value = []
 
   try {
-    const apiBase =
-      import.meta.env.VITE_API_BASE ||
-      `${window.location.protocol}//${window.location.hostname}:8081/api`
-    const response = await fetch(`${apiBase}/submissions/${props.submissionId}/hint`, {
+    const response = await fetch(`${API_BASE}/submissions/${props.submissionId}/hint`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -7,18 +7,7 @@ export default defineConfig({
     global: 'globalThis'
   },
   server: {
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:8081',
-        changeOrigin: true
-      },
-      '/ws': {
-        target: 'http://127.0.0.1:8081',
-        ws: true,
-        changeOrigin: true
-      }
-    }
+    port: 5173
   },
   build: {
     chunkSizeWarningLimit: 1500,

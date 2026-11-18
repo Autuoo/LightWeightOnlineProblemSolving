@@ -71,7 +71,7 @@ powershell -ExecutionPolicy Bypass -File scripts/init-db.ps1 -Password 你的MyS
 |---|---|---|
 | `OJ_DB_URL` | `jdbc:mysql://localhost:3306/oj...` | 数据源地址 |
 | `OJ_DB_USER` / `OJ_DB_PASSWORD` | `root` / `root` | 数据库账号 |
-| `SERVER_PORT` | `8080` | 建议本地设为 `8081`，与前端代理保持一致 |
+| `SERVER_PORT` | `8081` | 后端监听端口，前端默认直连该端口 |
 | `OJ_JWT_SECRET` | 开发占位值 | 部署必须替换为 ≥32 字节的随机串 |
 | `OJ_ADMIN_PASSWORD` | 空 | **非空时**启动会把 `admin` 的密码重置为该值 |
 | `OJ_SANDBOX_TYPE` | `process` | `process` 为本地子进程沙箱 |
@@ -79,15 +79,14 @@ powershell -ExecutionPolicy Bypass -File scripts/init-db.ps1 -Password 你的MyS
 | `OJ_AI_ENABLED` | `false` | AI 助教总开关 |
 
 ```bash
-# Windows CMD
+# Windows CMD（默认监听 8081，无需再设 SERVER_PORT）
 set OJ_ADMIN_PASSWORD=Admin@123
-set SERVER_PORT=8081
 mvn -f backend/pom.xml spring-boot:run
 ```
 
 ```powershell
 # PowerShell
-$env:OJ_ADMIN_PASSWORD="Admin@123"; $env:SERVER_PORT="8081"
+$env:OJ_ADMIN_PASSWORD="Admin@123"
 mvn -f backend/pom.xml spring-boot:run
 ```
 
@@ -100,7 +99,7 @@ pnpm -C frontend install
 pnpm -C frontend dev
 ```
 
-访问 http://localhost:5173 。开发服务器已把 `/api` 与 `/ws` 代理到 `127.0.0.1:8081`；若后端端口不同，请同步修改 `frontend/vite.config.js` 中的 `proxy.target`。
+访问 http://localhost:5173 。前端在 `frontend/src/api/config.js` 中直连 `http://<当前主机>:8081`，不经过 Vite 代理；后端地址变化时，用 `VITE_API_BASE` / `VITE_WS_BASE` 覆盖即可。
 
 ### 4. 登录
 
@@ -151,7 +150,7 @@ powershell -ExecutionPolicy Bypass -File scripts/e2e-test.ps1 -BaseUrl http://12
 
 ## 容器化
 
-`backend/Dockerfile` 提供多阶段构建（Maven 构建 → JRE 运行，暴露 8080）。根目录 `docker-compose.json` 为 MySQL + 后端的编排草稿，需重命名为 `docker-compose.yml` 后方可使用。
+`backend/Dockerfile` 提供多阶段构建（Maven 构建 → JRE 运行，暴露 8081）。根目录 `docker-compose.json` 为 MySQL + 后端的编排草稿，需重命名为 `docker-compose.yml` 后方可使用。
 
 ## 文档
 
