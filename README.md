@@ -121,7 +121,7 @@ pnpm -C frontend dev
 
 ## AI 助教（可选）
 
-默认关闭，关闭时判题主链路完全不受影响。开启需要一个 OpenAI 兼容端点：
+默认关闭，关闭时判题主链路完全不受影响。配置走 OpenAI 兼容协议，任何兼容端点都可以接入：
 
 ```bash
 set OJ_AI_ENABLED=true
@@ -129,6 +129,40 @@ set OJ_AI_BASE_URL=https://api.example.com/v1
 set OJ_AI_API_KEY=你的密钥
 set OJ_AI_MODEL=deepseek-chat
 ```
+
+### 接入阿里云百炼
+
+百炼提供 OpenAI 兼容模式，`base-url` 写到 `/v1` 为止，程序会自动拼接 `/chat/completions`：
+
+```properties
+oj.ai.enabled=true
+oj.ai.base-url=https://dashscope.aliyuncs.com/compatible-mode/v1
+oj.ai.api-key=sk-你的密钥
+oj.ai.model=qwen-plus
+```
+
+| 模型 | 说明 |
+|---|---|
+| `qwen-plus` | 推荐，支持 function calling，本项目的工具调用依赖该能力 |
+| `qwen-max` | 效果更好，费用更高 |
+| `qwen-turbo` | 响应快，提示质量一般 |
+
+专属 MaaS 端点（形如 `https://llm-xxxx.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`）同样适用，只替换 `base-url` 即可。海外账号使用 `dashscope-intl.aliyuncs.com`。
+
+### 本地配置覆盖
+
+Spring Boot 会读取工作目录下的 `config/application.properties`，优先级高于 jar 内配置。可以把本机数据库密码和 AI 密钥放在这里，该路径已加入 `.gitignore`，不会进入仓库：
+
+```properties
+spring.datasource.password=你的数据库密码
+
+oj.ai.enabled=true
+oj.ai.base-url=https://dashscope.aliyuncs.com/compatible-mode/v1
+oj.ai.api-key=sk-你的密钥
+oj.ai.model=qwen-plus
+```
+
+改完需重启后端，配置只在启动时加载。
 
 - 分级提示：思路 → 定位 → 检查点，首次只给方向，可点「再具体一点」逐层深入。
 - 可追问：内置常用快捷问题，也可输入自定义问题；同一提交的历史问答会持久化并回看。

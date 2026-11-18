@@ -132,6 +132,7 @@ public class SubmissionService {
                 submission.getProblemId(),
                 problemTitle,
                 submission.getLanguage(),
+                submission.getCode(),
                 submission.getStatus(),
                 submission.getScore(),
                 submission.getExecTimeMs(),

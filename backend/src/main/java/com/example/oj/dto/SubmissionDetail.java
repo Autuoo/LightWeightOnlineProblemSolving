@@ -8,6 +8,7 @@ public record SubmissionDetail(
         Long problemId,
         String problemTitle,
         String language,
+        String code,
         String status,
         Integer score,
         Integer execTimeMs,

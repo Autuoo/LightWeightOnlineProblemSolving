@@ -9,6 +9,8 @@ backend/oj-sandbox/
 # 本地环境变量与密钥
 .env
 .env.local
+/config/
+/backend/config/
 
 # 编辑器 / 智能体工具目录
 .idea/
