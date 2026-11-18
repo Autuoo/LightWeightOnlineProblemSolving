@@ -150,7 +150,7 @@ powershell -ExecutionPolicy Bypass -File scripts/e2e-test.ps1 -BaseUrl http://12
 
 ## 容器化
 
-`backend/Dockerfile` 提供多阶段构建（Maven 构建 → JRE 运行，暴露 8081）。根目录 `docker-compose.json` 为 MySQL + 后端的编排草稿，需重命名为 `docker-compose.yml` 后方可使用。
+`backend/Dockerfile` 提供多阶段构建（Maven 构建 → JRE 运行，暴露 8081）。根目录 `docker-compose.json` 是 MySQL + 后端的编排草稿，重命名为 `docker-compose.yml` 后方可使用；前端未包含在编排内，需单独构建或本地启动。
 
 ## 文档
 
@@ -162,4 +162,4 @@ powershell -ExecutionPolicy Bypass -File scripts/e2e-test.ps1 -BaseUrl http://12
 
 - 仅支持 3 种语言，未实现 Special Judge 与浮点误差比对。
 - 单机部署，无分布式调度与多节点扩展。
-- 进程沙箱依赖宿主机资源限制，适合课程与内网场景，不建议直接暴露到公网。
+- 进程沙箱仅做超时控制与工作目录隔离，未限制内存与网络，适合课程与内网场景，不建议直接暴露到公网。
