@@ -32,6 +32,9 @@ importers:
       sockjs-client:
         specifier: ^1.6.1
         version: 1.6.1
+      three:
+        specifier: 0.170.0
+        version: 0.170.0
       vue:
         specifier: ^3.5.13
         version: 3.5.45
@@ -636,6 +639,9 @@ packages:
     resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
     engines: {node: '>=0.10.0'}
 
+  three@0.170.0:
+    resolution: {integrity: sha512-FQK+LEpYc0fBD+J8g6oSEyyNzjp+Q7Ks1C568WWaoMRLW+TkNNWmenWeGgJjV105Gd+p/2ql1ZcjYvNiPZBhuQ==}
+
   uc.micro@2.1.0:
     resolution: {integrity: sha512-ARDJmphmdvUk6Glw7y9DQ2bFkKBHwQHLi2lsaH6PPmz/Ka9sFOBsBluozhDltWmnv9u/cF6Rt87znRTPV+yp/A==}
 
@@ -1207,6 +1213,8 @@ snapshots:
       - supports-color
 
   source-map-js@1.2.2: {}
+
+  three@0.170.0: {}
 
   uc.micro@2.1.0: {}
 

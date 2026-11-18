@@ -46,14 +46,16 @@
             <td class="title-cell">{{ item.problemTitle || `题目 ${item.problemId}` }}</td>
             <td v-if="auth.isAdmin" class="c-user mono">{{ item.username }}</td>
             <td class="c-status">
-              <StatusBadge :status="item.status" />
-              <span
-                v-if="item.suspicious && auth.isAdmin"
-                class="flag"
-                title="疑似打表/硬编码，仅标记，不影响得分"
-              >
-                可疑
-              </span>
+              <div class="status-stack">
+                <StatusBadge :status="item.status" />
+                <span
+                  v-if="item.suspicious && auth.isAdmin"
+                  class="flag"
+                  title="疑似打表/硬编码，仅标记，不影响得分"
+                >
+                  可疑
+                </span>
+              </div>
             </td>
             <td class="c-lang mono">{{ item.language }}</td>
             <td class="c-score mono">{{ item.score ?? 0 }}</td>
@@ -181,12 +183,19 @@ h1 {
   gap: 8px;
 }
 
+.status-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
 .flag {
-  margin-left: 8px;
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 10px;
   line-height: 1.6;
+  white-space: nowrap;
   color: #fbbf24;
   border: 1px solid rgba(251, 191, 36, 0.35);
   background: rgba(251, 191, 36, 0.1);
@@ -238,7 +247,7 @@ h1 {
 }
 
 .c-status {
-  width: 150px;
+  width: 170px;
 }
 
 .c-user {
