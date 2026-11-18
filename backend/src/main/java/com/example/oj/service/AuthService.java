@@ -48,6 +48,7 @@ public class AuthService {
     }
 
     private LoginResponse.UserView toView(User user) {
-        return new LoginResponse.UserView(user.getId(), user.getUsername(), user.getNickname(), user.getRole());
+        return new LoginResponse.UserView(user.getId(), user.getUsername(), user.getNickname(),
+                user.getRole(), user.getAvatarUrl());
     }
 }

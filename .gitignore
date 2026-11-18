@@ -6,6 +6,9 @@ frontend/node_modules/
 # 判题沙箱运行时目录
 backend/oj-sandbox/
 
+# 用户上传文件（头像等）
+/uploads/
+
 # 本地环境变量与密钥
 .env
 .env.local

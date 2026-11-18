@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS `user` (
   `nickname`      VARCHAR(32)     NOT NULL DEFAULT ''     COMMENT '显示名',
   `role`          VARCHAR(16)     NOT NULL DEFAULT 'STUDENT' COMMENT 'STUDENT/ADMIN',
   `status`        TINYINT         NOT NULL DEFAULT 1      COMMENT '1 正常 0 禁用',
+  `avatar_url`    VARCHAR(255)    NULL                    COMMENT '头像相对路径，如 /uploads/avatars/u1.png',
   `created_at`    DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   `updated_at`    DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (`id`),

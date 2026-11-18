@@ -31,6 +31,18 @@ export const aiConfigApi = {
   test: () => http.post('/me/ai-config/test')
 }
 
+export const statsApi = {
+  me: () => http.get('/me/stats')
+}
+
+export const profileApi = {
+  get: () => http.get('/me/profile'),
+  updateNickname: (nickname) => http.put('/me/profile', { nickname }),
+  changePassword: (payload) => http.put('/me/password', payload),
+  uploadAvatar: (formData) => http.post('/me/avatar', formData),
+  removeAvatar: () => http.delete('/me/avatar')
+}
+
 export const adminApi = {
   listProblems: (params) => http.get('/admin/problems', { params }),
   detailProblem: (id) => http.get(`/admin/problems/${id}`),

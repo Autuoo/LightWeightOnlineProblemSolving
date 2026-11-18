@@ -59,7 +59,8 @@
           <span class="conn-text">{{ connected ? '实时通道已连接' : '轮询模式' }}</span>
         </div>
         <div class="user">
-          <span class="avatar">{{ initial }}</span>
+          <img v-if="auth.user?.avatarUrl" class="avatar avatar-img" :src="avatarSrc" alt="" />
+          <span v-else class="avatar">{{ initial }}</span>
           <div class="user-meta">
             <div class="user-name">{{ auth.user?.nickname || auth.user?.username }}</div>
             <div class="user-role">{{ auth.isAdmin ? '管理员' : '学生' }}</div>
@@ -103,6 +104,7 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { hintApi } from '../api'
+import { API_BASE } from '../api/config'
 import { useAuthStore } from '../stores/auth'
 import { useSubmissionStore } from '../stores/submission'
 import { useTheme } from '../composables/theme'
@@ -118,6 +120,12 @@ const initial = computed(() => {
   const name = auth.user?.nickname || auth.user?.username || '?'
   return name.slice(0, 1).toUpperCase()
 })
+
+const API_ORIGIN = API_BASE.replace(/\/api$/, '')
+
+const avatarSrc = computed(() =>
+  auth.user?.avatarUrl ? `${API_ORIGIN}${auth.user.avatarUrl}` : ''
+)
 
 const aiStatus = ref(null)
 const aiNoticeDismissed = ref(sessionStorage.getItem('ai-notice-dismissed') === '1')
@@ -316,6 +324,11 @@ function logout() {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-dim);
+}
+
+.avatar-img {
+  object-fit: cover;
+  padding: 0;
 }
 
 .user-meta {
