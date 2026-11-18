@@ -11,8 +11,14 @@
 
     <div class="hint-body">
       <div v-if="setupNeeded && !serverEnabled" class="setup">
-        <p class="setup-text">AI 助教使用你自己的模型密钥。请先在「个人设置」中填写端点与 API Key。</p>
-        <RouterLink class="setup-link" to="/settings">去配置 →</RouterLink>
+        <div class="setup-head">
+          <span class="setup-icon" aria-hidden="true">!</span>
+          <span class="setup-title">AI 助教尚未启用</span>
+        </div>
+        <p class="setup-text">
+          它使用你自己的模型密钥。填入端点与 API Key 后即可获得失败分析与历史回看。
+        </p>
+        <RouterLink class="setup-link" to="/settings">去个人设置填写 →</RouterLink>
       </div>
 
       <p v-if="!messages.length && !current.question && !setupNeeded" class="placeholder">
@@ -379,27 +385,61 @@ watch(
 }
 
 .setup {
-  padding: 12px 13px;
-  border-radius: 9px;
-  border: 1px dashed rgba(45, 212, 191, 0.35);
-  background: rgba(45, 212, 191, 0.04);
+  padding: 13px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: linear-gradient(180deg, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.04));
+  box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.05);
+}
+
+.setup-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.setup-icon {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a1305;
+  background: #fbbf24;
+}
+
+.setup-title {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #fbbf24;
 }
 
 .setup-text {
-  margin: 0 0 8px;
+  margin: 0 0 9px;
   font-size: 12.5px;
   line-height: 1.8;
   color: var(--text-dim);
 }
 
 .setup-link {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 7px;
   font-size: 12px;
-  font-weight: 550;
-  color: var(--accent);
+  font-weight: 650;
+  color: #1a1305;
+  background: linear-gradient(180deg, #fcd34d, #f5b301);
+  transition: transform 0.16s ease, filter 0.16s ease;
 }
 
 .setup-link:hover {
-  text-decoration: underline;
+  transform: translateY(-1px);
+  filter: brightness(1.05);
 }
 
 .placeholder {

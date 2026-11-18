@@ -71,10 +71,22 @@
 
     <main class="main">
       <div v-if="showAiNotice" class="ai-notice">
-        <span class="ai-dot" />
-        <span class="ai-text">AI 助教尚未配置，配置你自己的模型凭据后才能使用</span>
-        <RouterLink class="ai-link" to="/settings">去配置</RouterLink>
-        <button class="ai-close" @click="dismissNotice">×</button>
+        <span class="ai-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+          </svg>
+        </span>
+        <div class="ai-copy">
+          <div class="ai-title">AI 助教尚未启用</div>
+          <div class="ai-desc">
+            填写你自己的模型端点与 API Key 后，才能获得失败分析、复杂度建议与历史回看。
+          </div>
+        </div>
+        <RouterLink class="ai-cta" to="/settings">
+          去配置
+          <span class="ai-cta-arrow">→</span>
+        </RouterLink>
+        <button class="ai-close" aria-label="关闭提示" @click="dismissNotice">×</button>
       </div>
 
       <RouterView v-slot="{ Component }">
@@ -338,49 +350,125 @@ function logout() {
 .ai-notice {
   position: sticky;
   top: 0;
-  z-index: 5;
+  z-index: 6;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 22px;
-  font-size: 12px;
-  color: var(--text-dim);
-  background: rgba(45, 212, 191, 0.07);
-  border-bottom: 1px solid rgba(45, 212, 191, 0.2);
-  backdrop-filter: blur(8px);
+  gap: 12px;
+  padding: 12px 22px;
+  color: #f6d98a;
+  background: linear-gradient(
+    90deg,
+    rgba(251, 191, 36, 0.18),
+    rgba(251, 191, 36, 0.07) 55%,
+    rgba(251, 191, 36, 0.14)
+  );
+  border-bottom: 1px solid rgba(251, 191, 36, 0.4);
+  box-shadow: 0 10px 30px -22px rgba(251, 191, 36, 0.9);
+  backdrop-filter: blur(10px);
+  animation: notice-in 0.36s cubic-bezier(0.22, 0.68, 0.35, 1);
 }
 
-.ai-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px rgba(45, 212, 191, 0.6);
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-.ai-text {
+.ai-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgba(251, 191, 36, 0.16);
+  border: 1px solid rgba(251, 191, 36, 0.32);
+}
+
+.ai-icon svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: #fbbf24;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ai-copy {
   flex: 1;
   min-width: 0;
 }
 
-.ai-link {
-  color: var(--accent);
-  font-weight: 550;
+.ai-title {
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: #fbbf24;
 }
 
-.ai-link:hover {
-  text-decoration: underline;
+.ai-desc {
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: rgba(246, 217, 138, 0.72);
+}
+
+.ai-cta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 650;
+  color: #1a1305;
+  background: linear-gradient(180deg, #fcd34d, #f5b301);
+  box-shadow: 0 5px 16px -8px rgba(251, 191, 36, 0.9);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+}
+
+.ai-cta:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow: 0 8px 20px -8px rgba(251, 191, 36, 1);
+}
+
+.ai-cta-arrow {
+  transition: transform 0.18s ease;
+}
+
+.ai-cta:hover .ai-cta-arrow {
+  transform: translateX(3px);
 }
 
 .ai-close {
-  color: var(--text-faint);
-  font-size: 15px;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  color: rgba(246, 217, 138, 0.6);
+  font-size: 16px;
   line-height: 1;
-  padding: 0 4px;
+  transition: background 0.16s ease, color 0.16s ease;
 }
 
 .ai-close:hover {
-  color: var(--text-dim);
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+}
+
+@media (max-width: 900px) {
+  .ai-desc {
+    display: none;
+  }
 }
 
 .main {
