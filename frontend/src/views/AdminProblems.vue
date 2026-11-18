@@ -7,6 +7,68 @@
       </div>
     </header>
 
+    <section class="panel list-panel rise">
+      <div class="card-head">
+        <h2>已有题目</h2>
+        <div class="list-tools">
+          <input
+            v-model.trim="keyword"
+            class="input search"
+            placeholder="按标题搜索"
+            @keyup.enter="loadProblems(1)"
+          />
+          <button class="btn btn-ghost" :disabled="listLoading" @click="loadProblems(1)">
+            搜索
+          </button>
+        </div>
+      </div>
+
+      <div class="prob-table">
+        <div class="prob-row prob-head">
+          <span>ID</span>
+          <span>标题</span>
+          <span>难度</span>
+          <span>可见</span>
+          <span>测试点</span>
+          <span class="right">操作</span>
+        </div>
+        <div
+          v-for="item in problems"
+          :key="item.id"
+          class="prob-row"
+          :class="{ active: editingId === item.id }"
+        >
+          <span class="mono">#{{ item.id }}</span>
+          <span class="prob-title">{{ item.title }}</span>
+          <span>{{ difficultyText(item.difficulty) }}</span>
+          <span>{{ item.visible === 1 ? '是' : '否' }}</span>
+          <span class="mono">{{ item.caseCount }}</span>
+          <span class="right">
+            <button class="btn btn-ghost mini" @click="editProblem(item.id)">编辑</button>
+          </span>
+        </div>
+        <div v-if="!problems.length" class="prob-empty">暂无题目</div>
+      </div>
+
+      <div class="list-pager">
+        <button
+          class="btn btn-ghost mini"
+          :disabled="problemPage <= 1"
+          @click="loadProblems(problemPage - 1)"
+        >
+          上一页
+        </button>
+        <span class="mono pager-text">第 {{ problemPage }} 页 · 共 {{ problemTotal }} 道</span>
+        <button
+          class="btn btn-ghost mini"
+          :disabled="problemPage * problemSize >= problemTotal"
+          @click="loadProblems(problemPage + 1)"
+        >
+          下一页
+        </button>
+      </div>
+    </section>
+
     <div class="grid">
       <section class="panel rise" style="animation-delay: 30ms">
         <div class="card-head">
@@ -109,10 +171,16 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { adminApi } from '../api'
 
 const editingId = ref(null)
+const problems = ref([])
+const problemPage = ref(1)
+const problemSize = 20
+const problemTotal = ref(0)
+const keyword = ref('')
+const listLoading = ref(false)
 const saving = ref(false)
 const problemError = ref('')
 const problemOk = ref('')
@@ -171,6 +239,7 @@ async function saveProblem() {
       testCaseProblemId.value = data.id
       problemOk.value = `题目已创建，ID = ${data.id}，可以接着导入测试点`
     }
+    await loadProblems()
   } catch (error) {
     problemError.value = error.message
   } finally {
@@ -189,6 +258,7 @@ async function saveTestCases() {
     }
     await adminApi.replaceTestCases(testCaseProblemId.value, { testCases: parsed })
     caseOk.value = `已导入 ${parsed.length} 个测试点`
+    await loadProblems()
   } catch (error) {
     caseError.value = error.message.includes('JSON') ? 'JSON 格式不正确' : error.message
   } finally {
@@ -219,6 +289,64 @@ function resetForm() {
   problemError.value = ''
   problemOk.value = ''
 }
+
+function difficultyText(value) {
+  if (value === 3) return '困难'
+  if (value === 2) return '中等'
+  return '简单'
+}
+
+async function loadProblems(nextPage = problemPage.value) {
+  listLoading.value = true
+  try {
+    const data = await adminApi.listProblems({
+      page: nextPage,
+      size: problemSize,
+      keyword: keyword.value
+    })
+    problems.value = data.records || []
+    problemPage.value = Number(data.page || nextPage)
+    problemTotal.value = Number(data.total || 0)
+  } catch (error) {
+    problemError.value = error.message
+  } finally {
+    listLoading.value = false
+  }
+}
+
+async function editProblem(id) {
+  problemError.value = ''
+  problemOk.value = ''
+  try {
+    const data = await adminApi.detailProblem(id)
+    editingId.value = data.id
+    form.title = data.title
+    form.description = data.description
+    form.difficulty = data.difficulty ?? 1
+    form.timeLimitMs = data.timeLimitMs ?? 1000
+    form.memoryLimitMb = data.memoryLimitMb ?? 256
+    form.visible = data.visible === 1
+    samplesText.value = (data.samples || [])
+      .map((sample) => `${sample.input || ''} ||| ${sample.output || ''}`)
+      .join('\n')
+    testCaseProblemId.value = data.id
+    testCasesText.value = JSON.stringify(
+      (data.testCases || []).map((item) => ({
+        orderNo: item.orderNo,
+        input: item.input,
+        expectedOutput: item.expectedOutput,
+        score: item.score
+      })),
+      null,
+      2
+    )
+    problemOk.value = `已载入题目 #${data.id}，修改后点左侧保存`
+  } catch (error) {
+    problemError.value = error.message
+  }
+}
+
+onMounted(() => loadProblems(1))
 </script>
 
 <style scoped>
@@ -242,6 +370,80 @@ h1 {
   margin: 0;
   color: var(--text-faint);
   font-size: 12.5px;
+}
+
+.list-panel {
+  margin-bottom: 18px;
+}
+
+.list-tools {
+  display: flex;
+  gap: 8px;
+}
+
+.search {
+  width: 200px;
+}
+
+.prob-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.prob-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 80px 70px 80px 100px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 6px;
+  font-size: 12.5px;
+  border-bottom: 1px solid var(--line);
+}
+
+.prob-row.active {
+  background: rgba(45, 212, 191, 0.05);
+}
+
+.prob-head {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.prob-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 11.5px;
+}
+
+.prob-empty {
+  padding: 26px 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.list-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+}
+
+.pager-text {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.right {
+  text-align: right;
 }
 
 .grid {

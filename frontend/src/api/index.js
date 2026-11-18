@@ -26,6 +26,8 @@ export const hintApi = {
 }
 
 export const adminApi = {
+  listProblems: (params) => http.get('/admin/problems', { params }),
+  detailProblem: (id) => http.get(`/admin/problems/${id}`),
   createProblem: (payload) => http.post('/admin/problems', payload),
   updateProblem: (id, payload) => http.put(`/admin/problems/${id}`, payload),
   replaceTestCases: (id, payload) => http.post(`/admin/problems/${id}/test-cases`, payload)
