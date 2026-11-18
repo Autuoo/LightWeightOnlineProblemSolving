@@ -18,7 +18,8 @@ public class AgentOrchestrator {
             1. 只能依据工具返回的信息作答，不得编造测试数据。
             2. 不得给出正确答案、完整可提交代码或直接的输出内容。
             3. 用启发式方式指出问题方向，例如输出格式、边界条件、复杂度。
-            4. 回答控制在 200 字以内，使用中文。
+            4. 回答控制在 220 字以内，使用中文。
+            5. 严格遵守本次请求指定的提示层级。
             """;
 
     private final LlmClient llmClient;
@@ -31,12 +32,15 @@ public class AgentOrchestrator {
         this.properties = properties;
     }
 
-    public HintResult orchestrate(HintContext context, String question, Consumer<HintResult.ToolTrace> onToolCall) {
+    public HintResult orchestrate(HintContext context, String question, int level,
+                                  Consumer<HintResult.ToolTrace> onToolCall) {
+        int normalized = normalizeLevel(level);
         List<LlmMessage> messages = new ArrayList<>();
         messages.add(LlmMessage.system(SYSTEM_PROMPT));
         messages.add(LlmMessage.user(
                 "当前提交 ID：" + context.submissionId()
                         + "\n当前题目 ID：" + context.problemId()
+                        + "\n提示层级：" + levelName(normalized) + "（" + levelRule(normalized) + "）"
                         + "\n请先调用工具查看这次提交的失败摘要和我的代码，再给出提示。"
                         + "\n学生的问题：" + question));
 
@@ -73,5 +77,25 @@ public class AgentOrchestrator {
 
         return new HintResult("抱歉，我需要更多信息才能给出提示，请补充你的思路后再试。",
                 traces, properties.getMaxSteps(), promptTokens, completionTokens, "STEP_LIMIT");
+    }
+
+    public static int normalizeLevel(int level) {
+        return Math.max(1, Math.min(3, level));
+    }
+
+    private static String levelName(int level) {
+        return switch (level) {
+            case 1 -> "思路";
+            case 2 -> "定位";
+            default -> "检查点";
+        };
+    }
+
+    private static String levelRule(int level) {
+        return switch (level) {
+            case 1 -> "只指出 1-2 个可能的方向，不要定位到具体语句，80 字以内";
+            case 2 -> "指出最可能出错的环节，如输入边界、输出格式、循环边界、数据类型、复杂度，可提及测试点序号，150 字以内";
+            default -> "给出 3-4 条自查清单，每条一句话，不要给代码，220 字以内";
+        };
     }
 }

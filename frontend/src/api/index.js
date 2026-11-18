@@ -20,6 +20,11 @@ export const leaderboardApi = {
   list: (limit = 20) => http.get('/leaderboard', { params: { limit } })
 }
 
+export const hintApi = {
+  status: () => http.get('/ai/status'),
+  history: (submissionId) => http.get(`/submissions/${submissionId}/hints`)
+}
+
 export const adminApi = {
   createProblem: (payload) => http.post('/admin/problems', payload),
   updateProblem: (id, payload) => http.put(`/admin/problems/${id}`, payload),

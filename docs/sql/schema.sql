@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS `ai_hint` (
   `submission_id`     BIGINT UNSIGNED NOT NULL              COMMENT '关联 submission.id',
   `user_id`           BIGINT UNSIGNED NOT NULL              COMMENT '提问用户',
   `question`          VARCHAR(500)    NOT NULL              COMMENT '学生提问（截断）',
+  `level`             TINYINT         NOT NULL DEFAULT 1    COMMENT '提示层级：1 思路 2 定位 3 检查点',
   `answer`            MEDIUMTEXT      NULL                  COMMENT '助教回答（仅最终文本）',
   `tool_calls`        JSON            NULL                  COMMENT '[{tool,ok,elapsedMs}] 调用轨迹，不含数据内容',
   `model`             VARCHAR(64)     NULL                  COMMENT '模型标识，如 deepseek-chat',
@@ -180,7 +181,7 @@ WHERE p.`title` = 'A+B Problem'
 --   OJ_AI_MODEL=deepseek-chat
 --   OJ_AI_MAX_STEPS=3
 --   OJ_AI_TIMEOUT_SECONDS=30
---   OJ_AI_DAILY_USER_QUOTA=20
+--   OJ_AI_DAILY_USER_QUOTA=100
 --   OJ_AI_DAILY_GLOBAL_QUOTA=500
---   OJ_AI_MIN_INTERVAL_SECONDS=60
+--   OJ_AI_MIN_INTERVAL_SECONDS=0   # 0 表示不限制最小间隔
 -- ------------------------------------------------------------

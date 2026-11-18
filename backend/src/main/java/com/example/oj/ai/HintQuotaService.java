@@ -37,9 +37,12 @@ public class HintQuotaService {
         }
 
         long now = System.currentTimeMillis();
-        Long last = lastRequestAt.get(userId);
-        if (last != null && now - last < properties.getMinIntervalSeconds() * 1000L) {
-            throw new BusinessException(ErrorCode.RATE_LIMITED, "请求过于频繁，请稍后再试");
+        int minInterval = properties.getMinIntervalSeconds();
+        if (minInterval > 0) {
+            Long last = lastRequestAt.get(userId);
+            if (last != null && now - last < minInterval * 1000L) {
+                throw new BusinessException(ErrorCode.RATE_LIMITED, "请求过于频繁，请稍后再试");
+            }
         }
 
         AtomicInteger count = userCounts.computeIfAbsent(userId, key -> new AtomicInteger());

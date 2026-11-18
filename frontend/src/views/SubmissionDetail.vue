@@ -66,7 +66,7 @@
             <pre class="compile mono">{{ detail.errorMessage }}</pre>
           </div>
 
-          <HintPanel :submission-id="detail.id" :enabled="finished" />
+          <HintPanel :submission-id="detail.id" :enabled="finished" :status="detail.status" />
         </section>
 
         <section class="right rise" style="animation-delay: 80ms">

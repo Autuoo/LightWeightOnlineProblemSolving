@@ -18,7 +18,7 @@ public class AiProperties {
     private int maxTokens = 800;
     private double temperature = 0.2;
     private int concurrency = 2;
-    private int dailyUserQuota = 20;
+    private int dailyUserQuota = 100;
     private int dailyGlobalQuota = 500;
-    private int minIntervalSeconds = 60;
+    private int minIntervalSeconds = 0;
 }

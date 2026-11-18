@@ -16,6 +16,7 @@ public class AiHint {
     private Long submissionId;
     private Long userId;
     private String question;
+    private Integer level;
     private String answer;
     private String toolCalls;
     private String model;
