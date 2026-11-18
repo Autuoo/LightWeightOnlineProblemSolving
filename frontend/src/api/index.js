@@ -34,7 +34,8 @@ export const adminApi = {
 export const adminUserApi = {
   list: (params) => http.get('/admin/users', { params }),
   updateStatus: (id, status) => http.patch(`/admin/users/${id}/status`, { status }),
-  resetPassword: (id) => http.post(`/admin/users/${id}/reset-password`)
+  resetPassword: (id) => http.post(`/admin/users/${id}/reset-password`),
+  create: (payload) => http.post('/admin/users', payload)
 }
 
 export const TERMINAL_STATUSES = ['AC', 'WA', 'TLE', 'MLE', 'RE', 'CE', 'REJECTED']

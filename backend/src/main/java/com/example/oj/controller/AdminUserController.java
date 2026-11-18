@@ -2,6 +2,8 @@ package com.example.oj.controller;
 
 import com.example.oj.common.Result;
 import com.example.oj.dto.AdminUserItem;
+import com.example.oj.dto.CreateUserRequest;
+import com.example.oj.dto.CreatedUser;
 import com.example.oj.dto.PageResponse;
 import com.example.oj.dto.UserStatusRequest;
 import com.example.oj.service.AdminUserService;
@@ -47,5 +49,10 @@ public class AdminUserController {
     @PostMapping("/{id}/reset-password")
     public Result<Map<String, String>> resetPassword(@PathVariable Long id) {
         return Result.ok(Map.of("password", adminUserService.resetPassword(id)));
+    }
+
+    @PostMapping
+    public Result<CreatedUser> create(@Valid @RequestBody CreateUserRequest request) {
+        return Result.ok(adminUserService.create(request));
     }
 }

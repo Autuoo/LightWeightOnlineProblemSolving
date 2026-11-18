@@ -13,6 +13,9 @@
           @keyup.enter="load(1)"
         />
         <button class="btn" :disabled="loading" @click="load(1)">搜索</button>
+        <button class="btn btn-primary" @click="toggleCreate">
+          {{ showCreate ? '收起' : '新建用户' }}
+        </button>
       </div>
     </header>
 
@@ -20,6 +23,25 @@
     <p v-if="error" class="err">{{ error }}</p>
 
     <section class="panel rise">
+      <div v-if="showCreate" class="create-row">
+        <input
+          v-model.trim="form.username"
+          class="input"
+          placeholder="用户名（3-32 位字母/数字/下划线）"
+        />
+        <input v-model.trim="form.nickname" class="input" placeholder="昵称（可选）" />
+        <input
+          v-model="form.password"
+          class="input"
+          type="password"
+          placeholder="密码（留空用默认密码）"
+        />
+        <button class="btn btn-primary" :disabled="creating" @click="createUser">
+          {{ creating ? '创建中' : '创建' }}
+        </button>
+        <button class="btn btn-ghost" :disabled="creating" @click="toggleCreate">取消</button>
+      </div>
+
       <div class="table-head">
         <span>用户名</span>
         <span>昵称</span>
@@ -105,6 +127,9 @@ const busy = ref(null)
 const error = ref('')
 const notice = ref('')
 const resetTarget = ref(null)
+const showCreate = ref(false)
+const creating = ref(false)
+const form = ref({ username: '', nickname: '', password: '' })
 
 function formatTime(value) {
   if (!value) return '—'
@@ -160,6 +185,40 @@ async function confirmReset(user) {
     error.value = err.message || '重置失败'
   } finally {
     busy.value = null
+  }
+}
+
+function toggleCreate() {
+  showCreate.value = !showCreate.value
+  if (!showCreate.value) {
+    form.value = { username: '', nickname: '', password: '' }
+  }
+  error.value = ''
+}
+
+async function createUser() {
+  const username = form.value.username.trim()
+  if (!username) {
+    error.value = '请输入用户名'
+    return
+  }
+  creating.value = true
+  error.value = ''
+  notice.value = ''
+  try {
+    const data = await adminUserApi.create({
+      username,
+      nickname: form.value.nickname.trim() || null,
+      password: form.value.password || null
+    })
+    notice.value = `已创建 ${data.username}，初始密码 ${data.password}`
+    showCreate.value = false
+    form.value = { username: '', nickname: '', password: '' }
+    await load(1)
+  } catch (err) {
+    error.value = err.message || '创建失败'
+  } finally {
+    creating.value = false
   }
 }
 
@@ -221,6 +280,16 @@ h1 {
 .panel {
   padding: 0;
   overflow: hidden;
+}
+
+.create-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1.4fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(45, 212, 191, 0.03);
 }
 
 .table-head,

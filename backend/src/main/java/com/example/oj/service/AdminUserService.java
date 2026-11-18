@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.oj.common.BusinessException;
 import com.example.oj.common.ErrorCode;
 import com.example.oj.dto.AdminUserItem;
+import com.example.oj.dto.CreateUserRequest;
+import com.example.oj.dto.CreatedUser;
 import com.example.oj.dto.PageResponse;
 import com.example.oj.entity.User;
 import com.example.oj.mapper.UserMapper;
@@ -83,6 +85,29 @@ public class AdminUserService {
                 .eq(User::getId, userId)
                 .set(User::getPasswordHash, passwordEncoder.encode(defaultPassword)));
         return defaultPassword;
+    }
+
+    public CreatedUser create(CreateUserRequest request) {
+        String username = request.username().trim();
+        long exists = userMapper.selectCount(new LambdaQueryWrapper<User>()
+                .eq(User::getUsername, username));
+        if (exists > 0) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "用户名已存在：" + username);
+        }
+
+        String rawPassword = request.password() == null || request.password().isBlank()
+                ? defaultPassword : request.password();
+        String nickname = request.nickname() == null || request.nickname().isBlank()
+                ? username : request.nickname().trim();
+
+        User user = new User();
+        user.setUsername(username);
+        user.setNickname(nickname);
+        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        user.setRole("STUDENT");
+        user.setStatus(1);
+        userMapper.insert(user);
+        return new CreatedUser(user.getId(), username, rawPassword);
     }
 
     private User requireUser(Long userId) {
