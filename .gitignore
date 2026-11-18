@@ -1,0 +1,25 @@
+# 构建产物
+backend/target/
+frontend/dist/
+frontend/node_modules/
+
+# 判题沙箱运行时目录
+backend/oj-sandbox/
+
+# 本地环境变量与密钥
+.env
+.env.local
+
+# 编辑器 / 智能体工具目录
+.idea/
+*.iml
+.vscode/
+.codeartsdoer/
+.arts/
+.merkle-snapshot.json
+
+# 日志与系统文件
+*.log
+logs/
+.DS_Store
+Thumbs.db

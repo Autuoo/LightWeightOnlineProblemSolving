@@ -1,0 +1,46 @@
+{
+  "services": {
+    "mysql": {
+      "image": "mysql:8.0",
+      "container_name": "oj-mysql",
+      "environment": {
+        "MYSQL_ROOT_PASSWORD": "root",
+        "MYSQL_DATABASE": "oj",
+        "TZ": "Asia/Shanghai"
+      },
+      "ports": ["3306:3306"],
+      "volumes": [
+        "mysql-data:/var/lib/mysql",
+        "./docs/sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro"
+      ],
+      "healthcheck": {
+        "test": ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"],
+        "interval": "5s",
+        "timeout": "3s",
+        "retries": 30
+      }
+    },
+    "backend": {
+      "build": { "context": "./backend" },
+      "container_name": "oj-backend",
+      "depends_on": { "mysql": { "condition": "service_healthy" } },
+      "environment": {
+        "OJ_DB_URL": "jdbc:mysql://mysql:3306/oj?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true",
+        "OJ_DB_USER": "root",
+        "OJ_DB_PASSWORD": "root",
+        "OJ_JWT_SECRET": "replace-with-a-32-byte-secret-value",
+        "OJ_SANDBOX_TYPE": "process",
+        "OJ_JUDGE_CONCURRENCY": "4",
+        "OJ_AI_ENABLED": "false"
+      },
+      "ports": ["8080:8080"],
+      "volumes": [
+        "/var/run/docker.sock:/var/run/docker.sock",
+        "./oj-sandbox:/app/oj-sandbox"
+      ]
+    }
+  },
+  "volumes": {
+    "mysql-data": {}
+  }
+}
