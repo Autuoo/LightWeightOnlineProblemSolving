@@ -9,14 +9,17 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class StatsService {
 
     private static final String ACCEPTED = "AC";
-    private static final int TREND_DAYS = 7;
+    private static final int MIN_DAYS = 1;
+    private static final int MAX_DAYS = 90;
 
     private final SubmissionMapper submissionMapper;
 
@@ -24,51 +27,52 @@ public class StatsService {
         this.submissionMapper = submissionMapper;
     }
 
-    public UserStats stats(Long userId) {
+    public UserStats stats(Long userId, int days) {
+        int range = Math.max(MIN_DAYS, Math.min(MAX_DAYS, days));
         LocalDate today = LocalDate.now();
-        List<Submission> todayRows = submissionMapper.selectList(new LambdaQueryWrapper<Submission>()
-                .eq(Submission::getUserId, userId)
-                .ge(Submission::getCreatedAt, today.atStartOfDay())
-                .lt(Submission::getCreatedAt, today.plusDays(1).atStartOfDay()));
+        LocalDate from = today.minusDays(range - 1L);
 
-        long submissions = todayRows.size();
-        long accepted = todayRows.stream()
-                .filter(item -> ACCEPTED.equals(item.getStatus()))
-                .count();
-        long solvedProblems = todayRows.stream()
-                .filter(item -> ACCEPTED.equals(item.getStatus()))
-                .map(Submission::getProblemId)
-                .distinct()
-                .count();
-        double acceptanceRate = submissions == 0
-                ? 0.0
-                : Math.round(accepted * 10000.0 / submissions) / 100.0;
-
-        LocalDate from = today.minusDays(TREND_DAYS - 1L);
         List<Submission> recent = submissionMapper.selectList(new LambdaQueryWrapper<Submission>()
                 .eq(Submission::getUserId, userId)
-                .ge(Submission::getCreatedAt, from.atStartOfDay()));
+                .ge(Submission::getCreatedAt, from.atStartOfDay())
+                .lt(Submission::getCreatedAt, today.plusDays(1).atStartOfDay()));
 
-        Map<LocalDate, long[]> byDay = new HashMap<>();
+        Map<LocalDate, DayAccumulator> byDay = new HashMap<>();
         for (Submission item : recent) {
             if (item.getCreatedAt() == null) {
                 continue;
             }
-            long[] values = byDay.computeIfAbsent(item.getCreatedAt().toLocalDate(), key -> new long[2]);
-            values[0]++;
+            byDay.computeIfAbsent(item.getCreatedAt().toLocalDate(), key -> new DayAccumulator())
+                    .add(item);
+        }
+
+        List<UserStats.DayPoint> trend = new ArrayList<>(range);
+        for (int i = 0; i < range; i++) {
+            LocalDate date = from.plusDays(i);
+            DayAccumulator day = byDay.getOrDefault(date, new DayAccumulator());
+            trend.add(new UserStats.DayPoint(date, day.submissions, day.accepted, day.solvedProblems.size()));
+        }
+
+        DayAccumulator todayData = byDay.getOrDefault(today, new DayAccumulator());
+        double rate = todayData.submissions == 0
+                ? 0.0
+                : Math.round(todayData.accepted * 10000.0 / todayData.submissions) / 100.0;
+        UserStats.Today summary = new UserStats.Today(
+                todayData.submissions, todayData.accepted, rate, todayData.solvedProblems.size());
+        return new UserStats(summary, trend);
+    }
+
+    private static final class DayAccumulator {
+        private long submissions;
+        private long accepted;
+        private final Set<Long> solvedProblems = new HashSet<>();
+
+        void add(Submission item) {
+            submissions++;
             if (ACCEPTED.equals(item.getStatus())) {
-                values[1]++;
+                accepted++;
+                solvedProblems.add(item.getProblemId());
             }
         }
-
-        List<UserStats.DayPoint> trend = new ArrayList<>(TREND_DAYS);
-        for (int i = 0; i < TREND_DAYS; i++) {
-            LocalDate date = from.plusDays(i);
-            long[] values = byDay.getOrDefault(date, new long[2]);
-            trend.add(new UserStats.DayPoint(date, values[0], values[1]));
-        }
-
-        UserStats.Today summary = new UserStats.Today(submissions, accepted, acceptanceRate, solvedProblems);
-        return new UserStats(summary, trend);
     }
 }

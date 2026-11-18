@@ -32,7 +32,7 @@ export const aiConfigApi = {
 }
 
 export const statsApi = {
-  me: () => http.get('/me/stats')
+  me: (days = 7) => http.get('/me/stats', { params: { days } })
 }
 
 export const profileApi = {

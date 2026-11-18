@@ -8,6 +8,6 @@ public record UserStats(Today today, List<DayPoint> trend) {
     public record Today(long submissions, long accepted, double acceptanceRate, long solvedProblems) {
     }
 
-    public record DayPoint(LocalDate date, long submissions, long accepted) {
+    public record DayPoint(LocalDate date, long submissions, long accepted, long solvedProblems) {
     }
 }

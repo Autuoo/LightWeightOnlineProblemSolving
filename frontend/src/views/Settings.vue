@@ -64,10 +64,20 @@
 
       <section class="panel rise">
         <div class="card-head">
-          <h2>今日概览</h2>
-          <span class="sub mono">{{ todayLabel }}</span>
+          <h2>刷题概览</h2>
+          <div class="range-switch">
+            <button
+              v-for="option in rangeOptions"
+              :key="option.days"
+              class="range-btn"
+              :class="{ active: rangeDays === option.days }"
+              @click="changeRange(option.days)"
+            >
+              {{ option.label }}
+            </button>
+          </div>
         </div>
-        <p class="card-desc">按提交时间统计，包含仍在判题中的记录；悬停卡片可查看说明。</p>
+        <p class="card-desc">按提交时间统计；悬停柱子查看当天数据，点击柱子展开当天记录。</p>
 
         <div class="stat-grid">
           <div class="stat" :title="`今天共提交 ${stats.today.submissions} 次`">
@@ -89,34 +99,74 @@
         </div>
 
         <div class="chart-head">
-          <span>近 7 天提交</span>
+          <span>近 {{ rangeDays }} 天</span>
           <span class="legend">
             <i class="dot total" />提交
             <i class="dot ac" />通过
           </span>
         </div>
 
-        <div class="chart">
+        <div class="chart-hover-info" :class="{ active: hoveredPoint }">
+          <template v-if="hoveredPoint">
+            <span class="hover-date mono">{{ hoveredPoint.date }}</span>
+            <span>提交 <b>{{ hoveredPoint.submissions }}</b></span>
+            <span>通过 <b>{{ hoveredPoint.accepted }}</b></span>
+            <span>通过题目 <b>{{ hoveredPoint.solvedProblems }}</b></span>
+            <span>通过率 <b>{{ pointRate(hoveredPoint) }}%</b></span>
+          </template>
+          <span v-else class="hover-idle">把鼠标移到柱子上查看每日数据，点击可展开当天记录</span>
+        </div>
+
+        <div class="chart" :class="{ dense: rangeDays > 10 }">
           <div
             v-for="(point, index) in stats.trend"
             :key="point.date"
             class="chart-col"
-            :title="`${point.date}：提交 ${point.submissions}，通过 ${point.accepted}`"
+            :class="{
+              hovered: hoveredPoint && hoveredPoint.date === point.date,
+              selected: selectedDate === point.date
+            }"
+            @mouseenter="hoveredPoint = point"
+            @mouseleave="hoveredPoint = null"
+            @click="selectDay(point)"
           >
             <div class="bars">
               <div
                 class="bar total"
-                :style="{ height: barHeight(point.submissions), transitionDelay: `${index * 35}ms` }"
-                :title="`${point.date} 提交 ${point.submissions}`"
+                :style="{ height: barHeight(point.submissions), transitionDelay: `${index * 18}ms` }"
               />
               <div
                 class="bar ac"
-                :style="{ height: barHeight(point.accepted), transitionDelay: `${index * 35 + 60}ms` }"
-                :title="`${point.date} 通过 ${point.accepted}`"
+                :style="{ height: barHeight(point.accepted), transitionDelay: `${index * 18 + 40}ms` }"
               />
             </div>
-            <span class="chart-label">{{ shortDate(point.date) }}</span>
+            <span class="chart-label">{{ showLabel(index) ? shortDate(point.date) : '' }}</span>
           </div>
+        </div>
+
+        <div v-if="dayDetail" class="day-detail">
+          <div class="day-detail-head">
+            <span class="mono day-date">{{ dayDetail.date }}</span>
+            <span class="day-summary">
+              提交 {{ dayDetail.submissions }} · 通过 {{ dayDetail.accepted }} · 通过题目
+              {{ dayDetail.solvedProblems }}
+            </span>
+            <button class="link" @click="clearDay">收起</button>
+          </div>
+          <div v-if="dayDetail.loading" class="day-empty">加载中…</div>
+          <div v-else-if="!dayDetail.records.length" class="day-empty">这一天没有提交记录</div>
+          <template v-else>
+            <button
+              v-for="item in dayDetail.records"
+              :key="item.id"
+              class="day-row"
+              @click="openRecord(item.id)"
+            >
+              <span class="day-title">{{ item.problemTitle || `题目 ${item.problemId}` }}</span>
+              <span><i class="status" :class="statusClass(item.status)">{{ item.status }}</i></span>
+              <span class="mono time">{{ formatDateTime(item.createdAt) }}</span>
+            </button>
+          </template>
         </div>
       </section>
     </div>
@@ -356,6 +406,15 @@ const stats = reactive({
 })
 const chartReady = ref(false)
 
+const rangeOptions = [
+  { days: 7, label: '近 7 天' },
+  { days: 30, label: '近 30 天' }
+]
+const rangeDays = ref(7)
+const hoveredPoint = ref(null)
+const selectedDate = ref('')
+const dayDetail = ref(null)
+
 const records = ref([])
 const recordPage = ref(1)
 const recordSize = 10
@@ -524,8 +583,9 @@ async function removeAvatar() {
 }
 
 async function loadStats() {
+  chartReady.value = false
   try {
-    const data = await statsApi.me()
+    const data = await statsApi.me(rangeDays.value)
     stats.today = data.today
     stats.trend = data.trend || []
     requestAnimationFrame(() => {
@@ -534,6 +594,60 @@ async function loadStats() {
   } catch {
     stats.trend = []
   }
+}
+
+function changeRange(days) {
+  if (rangeDays.value === days) return
+  rangeDays.value = days
+  hoveredPoint.value = null
+  selectedDate.value = ''
+  dayDetail.value = null
+  loadStats()
+}
+
+function pointRate(point) {
+  if (!point.submissions) return 0
+  return Math.round((point.accepted / point.submissions) * 100)
+}
+
+function showLabel(index) {
+  const total = stats.trend.length
+  if (total <= 10) return true
+  return index % 5 === 0 || index === total - 1
+}
+
+async function selectDay(point) {
+  if (selectedDate.value === point.date) {
+    clearDay()
+    return
+  }
+  selectedDate.value = point.date
+  dayDetail.value = {
+    date: point.date,
+    loading: true,
+    records: [],
+    submissions: point.submissions,
+    accepted: point.accepted,
+    solvedProblems: point.solvedProblems
+  }
+  try {
+    const data = await submissionApi.list({
+      page: 1,
+      size: 50,
+      from: point.date,
+      to: point.date
+    })
+    dayDetail.value.records = data.records || []
+  } catch {
+    dayDetail.value.records = []
+  } finally {
+    dayDetail.value.loading = false
+  }
+}
+
+function clearDay() {
+  selectedDate.value = ''
+  dayDetail.value = null
 }
 
 function formatDateParam(date) {
@@ -914,6 +1028,152 @@ h1 {
 }
 
 .stat-label {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.range-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-sunken);
+}
+
+.range-btn {
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-faint);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.16s ease, background 0.16s ease;
+}
+
+.range-btn:hover {
+  color: var(--text-dim);
+}
+
+.range-btn.active {
+  color: var(--accent);
+  background: rgba(45, 212, 191, 0.12);
+}
+
+.chart-hover-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+  margin-bottom: 8px;
+  padding: 0 4px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.chart-hover-info.active {
+  color: var(--text-dim);
+}
+
+.chart-hover-info b {
+  margin-left: 2px;
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.hover-date {
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.hover-idle {
+  opacity: 0.8;
+}
+
+.chart.dense .chart-col {
+  gap: 3px;
+}
+
+.chart.dense .bar {
+  width: 5px;
+}
+
+.chart.dense .chart-label {
+  font-size: 9px;
+}
+
+.chart-col.hovered {
+  background: rgba(45, 212, 191, 0.06);
+}
+
+.chart-col.selected {
+  background: rgba(45, 212, 191, 0.1);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.day-detail {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.day-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.day-date {
+  color: var(--accent);
+}
+
+.day-summary {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.day-detail-head .link {
+  margin-left: auto;
+}
+
+.day-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 110px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 6px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+
+.day-row:hover {
+  background: rgba(45, 212, 191, 0.04);
+}
+
+.day-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.day-empty {
+  padding: 16px 0;
+  text-align: center;
   font-size: 11.5px;
   color: var(--text-faint);
 }
