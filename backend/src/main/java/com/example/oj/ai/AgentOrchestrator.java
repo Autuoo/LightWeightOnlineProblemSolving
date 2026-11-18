@@ -20,6 +20,10 @@ public class AgentOrchestrator {
             3. 用启发式方式指出问题方向，例如输出格式、边界条件、复杂度。
             4. 回答控制在 220 字以内，使用中文。
             5. 严格遵守本次请求指定的提示层级。
+            6. 学生的问题才是本次回答的核心，必须直接回答它，不要答非所问。
+            7. 先判断问题类型（失败诊断 / 复杂度 / 输入输出 / 边界条件），只围绕该问题作答。
+            8. 若发现与学生所问无关的问题，先完整回答学生的问题，最后最多用一句话补充，不要放在开头。
+            9. 学生问复杂度时，必须基于代码结构给出复杂度量级（如 O(n)、O(n log n)、O(n²)）与优化方向，即使代码仍有错误；错误本身最多一句话带过。
             """;
 
     private final LlmClient llmClient;
@@ -41,8 +45,13 @@ public class AgentOrchestrator {
                 "当前提交 ID：" + context.submissionId()
                         + "\n当前题目 ID：" + context.problemId()
                         + "\n提示层级：" + levelName(normalized) + "（" + levelRule(normalized) + "）"
-                        + "\n请先调用工具查看这次提交的失败摘要和我的代码，再给出提示。"
-                        + "\n学生的问题：" + question));
+                        + "\n学生的问题（本次回答的核心，请直接回答）：" + question
+                        + (isPerformanceQuestion(question)
+                        ? "\n注意：这是复杂度或性能类问题，必须先给出复杂度量级判断。"
+                        : "")
+                        + "\n回答顺序：先完整回答学生的问题，再视情况用一句话补充其他风险。"
+                        + "\n按问题需要选择工具：诊断失败用 get_failure_summary；"
+                        + "分析复杂度或实现用 get_problem、get_my_submission、get_language_limits。"));
 
         List<HintResult.ToolTrace> traces = new ArrayList<>();
         int promptTokens = 0;
@@ -79,6 +88,17 @@ public class AgentOrchestrator {
                 traces, properties.getMaxSteps(), promptTokens, completionTokens, "STEP_LIMIT");
     }
 
+    private static boolean isPerformanceQuestion(String question) {
+        if (question == null) {
+            return false;
+        }
+        return question.contains("复杂度")
+                || question.contains("性能")
+                || question.contains("优化")
+                || question.contains("超时")
+                || question.contains("效率");
+    }
+
     public static int normalizeLevel(int level) {
         return Math.max(1, Math.min(3, level));
     }
@@ -93,8 +113,8 @@ public class AgentOrchestrator {
 
     private static String levelRule(int level) {
         return switch (level) {
-            case 1 -> "只指出 1-2 个可能的方向，不要定位到具体语句，80 字以内";
-            case 2 -> "指出最可能出错的环节，如输入边界、输出格式、循环边界、数据类型、复杂度，可提及测试点序号，150 字以内";
+            case 1 -> "只给出 1-2 个方向性结论，不展开具体改写，80 字以内";
+            case 2 -> "指出问题所在的具体环节（边界、格式、复杂度、数据类型），可提及测试点序号，150 字以内";
             default -> "给出 3-4 条自查清单，每条一句话，不要给代码，220 字以内";
         };
     }
