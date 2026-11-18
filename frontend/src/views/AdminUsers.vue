@@ -42,6 +42,28 @@
         <button class="btn btn-ghost" :disabled="creating" @click="toggleCreate">取消</button>
       </div>
 
+      <div v-if="aiView" class="ai-view">
+        <div class="ai-view-main">
+          <span class="ai-view-title">{{ aiView.username }} 的 AI 配置</span>
+          <span v-if="!aiView.data.hasApiKey" class="ai-view-text">未配置</span>
+          <span v-else class="ai-view-text">
+            {{ aiView.data.enabled ? '已启用' : '已停用' }} · 端点 {{ aiView.data.baseUrl }} ·
+            模型 {{ aiView.data.model }} · Key {{ aiView.data.apiKeyMasked }}
+          </span>
+        </div>
+        <div class="ai-view-ops">
+          <button
+            v-if="aiView.data.hasApiKey"
+            class="btn op confirm"
+            :disabled="busy === aiView.id"
+            @click="clearAiConfig"
+          >
+            清空配置
+          </button>
+          <button class="btn btn-ghost op" @click="aiView = null">关闭</button>
+        </div>
+      </div>
+
       <div class="table-head">
         <span>用户名</span>
         <span>昵称</span>
@@ -90,6 +112,10 @@
             </button>
             <button class="btn btn-ghost op" @click="resetTarget = null">取消</button>
           </template>
+
+          <button class="btn btn-ghost op" :disabled="busy === user.id" @click="viewAiConfig(user)">
+            AI 配置
+          </button>
         </span>
       </div>
 
@@ -130,6 +156,7 @@ const resetTarget = ref(null)
 const showCreate = ref(false)
 const creating = ref(false)
 const form = ref({ username: '', nickname: '', password: '' })
+const aiView = ref(null)
 
 function formatTime(value) {
   if (!value) return '—'
@@ -222,6 +249,38 @@ async function createUser() {
   }
 }
 
+async function viewAiConfig(user) {
+  error.value = ''
+  notice.value = ''
+  try {
+    const data = await adminUserApi.aiConfig(user.id)
+    aiView.value = { id: user.id, username: user.username, data }
+  } catch (err) {
+    error.value = err.message || '读取 AI 配置失败'
+  }
+}
+
+async function clearAiConfig() {
+  if (!aiView.value) return
+  busy.value = aiView.value.id
+  error.value = ''
+  try {
+    await adminUserApi.clearAiConfig(aiView.value.id)
+    aiView.value.data = {
+      ...aiView.value.data,
+      enabled: false,
+      baseUrl: '',
+      hasApiKey: false,
+      apiKeyMasked: ''
+    }
+    notice.value = `${aiView.value.username} 的 AI 配置已清空`
+  } catch (err) {
+    error.value = err.message || '清空失败'
+  } finally {
+    busy.value = null
+  }
+}
+
 onMounted(() => load(1))
 </script>
 
@@ -290,6 +349,40 @@ h1 {
   padding: 12px 18px;
   border-bottom: 1px solid var(--line);
   background: rgba(45, 212, 191, 0.03);
+}
+
+.ai-view {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(45, 212, 191, 0.04);
+  font-size: 12px;
+}
+
+.ai-view-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ai-view-title {
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.ai-view-text {
+  color: var(--text-faint);
+  overflow-wrap: anywhere;
+}
+
+.ai-view-ops {
+  display: flex;
+  gap: 6px;
 }
 
 .table-head,

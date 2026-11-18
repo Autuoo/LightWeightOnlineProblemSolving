@@ -22,6 +22,15 @@
           <svg viewBox="0 0 24 24" class="ico"><path d="M5 4h14v16H5zM8 9h8M8 13h5" /></svg>
           <span>提交记录</span>
         </RouterLink>
+        <RouterLink to="/settings" class="nav-item">
+          <svg viewBox="0 0 24 24" class="ico">
+            <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h10M18 18h2" />
+            <circle cx="16" cy="6" r="2" />
+            <circle cx="10" cy="12" r="2" />
+            <circle cx="16" cy="18" r="2" />
+          </svg>
+          <span>个人设置</span>
+        </RouterLink>
         <RouterLink v-if="auth.isAdmin" to="/admin/problems" class="nav-item">
           <svg viewBox="0 0 24 24" class="ico"><path d="M12 3l8 4v6c0 4-3.4 7.2-8 8-4.6-.8-8-4-8-8V7z" /></svg>
           <span>题目管理</span>
@@ -61,6 +70,13 @@
     </aside>
 
     <main class="main">
+      <div v-if="showAiNotice" class="ai-notice">
+        <span class="ai-dot" />
+        <span class="ai-text">AI 助教尚未配置，配置你自己的模型凭据后才能使用</span>
+        <RouterLink class="ai-link" to="/settings">去配置</RouterLink>
+        <button class="ai-close" @click="dismissNotice">×</button>
+      </div>
+
       <RouterView v-slot="{ Component }">
         <Transition name="fade" mode="out-in">
           <component :is="Component" />
@@ -71,9 +87,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
+import { hintApi } from '../api'
 import { useAuthStore } from '../stores/auth'
 import { useSubmissionStore } from '../stores/submission'
 import { useTheme } from '../composables/theme'
@@ -88,6 +105,28 @@ const { connected } = storeToRefs(submissionStore)
 const initial = computed(() => {
   const name = auth.user?.nickname || auth.user?.username || '?'
   return name.slice(0, 1).toUpperCase()
+})
+
+const aiStatus = ref(null)
+const aiNoticeDismissed = ref(sessionStorage.getItem('ai-notice-dismissed') === '1')
+
+const showAiNotice = computed(() => {
+  const status = aiStatus.value
+  return Boolean(status && status.globalEnabled && !status.configured && !aiNoticeDismissed.value)
+})
+
+function dismissNotice() {
+  aiNoticeDismissed.value = true
+  sessionStorage.setItem('ai-notice-dismissed', '1')
+}
+
+onMounted(async () => {
+  if (!auth.isLoggedIn) return
+  try {
+    aiStatus.value = await hintApi.status()
+  } catch {
+    aiStatus.value = null
+  }
 })
 
 function logout() {
@@ -294,6 +333,54 @@ function logout() {
 
 .logout:hover {
   color: var(--err);
+}
+
+.ai-notice {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 22px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(45, 212, 191, 0.07);
+  border-bottom: 1px solid rgba(45, 212, 191, 0.2);
+  backdrop-filter: blur(8px);
+}
+
+.ai-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(45, 212, 191, 0.6);
+}
+
+.ai-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-link {
+  color: var(--accent);
+  font-weight: 550;
+}
+
+.ai-link:hover {
+  text-decoration: underline;
+}
+
+.ai-close {
+  color: var(--text-faint);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.ai-close:hover {
+  color: var(--text-dim);
 }
 
 .main {

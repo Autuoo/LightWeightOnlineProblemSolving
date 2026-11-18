@@ -10,7 +10,12 @@
     </div>
 
     <div class="hint-body">
-      <p v-if="!messages.length && !current.question" class="placeholder">
+      <div v-if="setupNeeded && !serverEnabled" class="setup">
+        <p class="setup-text">AI 助教使用你自己的模型密钥。请先在「个人设置」中填写端点与 API Key。</p>
+        <RouterLink class="setup-link" to="/settings">去配置 →</RouterLink>
+      </div>
+
+      <p v-if="!messages.length && !current.question && !setupNeeded" class="placeholder">
         它会读取题面、你的代码和<strong>脱敏后的</strong>失败摘要，提示可能的出错方向，不会返回测试点数据。
       </p>
 
@@ -59,7 +64,7 @@
       <p v-if="error" class="err">{{ error }}</p>
     </div>
 
-    <div v-if="enabled" class="hint-foot">
+    <div v-if="enabled && !setupNeeded" class="hint-foot">
       <div class="chips">
         <button
           v-for="item in quickQuestions"
@@ -98,6 +103,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
 import { hintApi } from '../api'
@@ -128,6 +134,7 @@ const auth = useAuthStore()
 
 const ready = ref(false)
 const serverEnabled = ref(true)
+const aiStatus = ref(null)
 const messages = ref([])
 const current = ref({ question: '', answer: '', level: 1, reused: false })
 const traces = ref([])
@@ -137,9 +144,16 @@ const draft = ref('')
 
 let historyLoaded = false
 
-const visible = computed(
-  () => ready.value && serverEnabled.value && props.status !== 'AC'
-)
+const setupNeeded = computed(() => {
+  const status = aiStatus.value
+  return Boolean(status && status.globalEnabled && !status.configured)
+})
+
+const visible = computed(() => {
+  if (!ready.value || props.status === 'AC') return false
+  if (serverEnabled.value) return true
+  return setupNeeded.value && props.enabled
+})
 
 const canDeepen = computed(() => {
   if (loading.value || !messages.value.length) return false
@@ -279,6 +293,7 @@ onMounted(async () => {
   }
   try {
     const status = await hintApi.status()
+    aiStatus.value = status
     serverEnabled.value = Boolean(status.enabled)
   } catch {
     serverEnabled.value = false
@@ -361,6 +376,30 @@ watch(
 .hint-body {
   padding: 14px 16px;
   min-height: 70px;
+}
+
+.setup {
+  padding: 12px 13px;
+  border-radius: 9px;
+  border: 1px dashed rgba(45, 212, 191, 0.35);
+  background: rgba(45, 212, 191, 0.04);
+}
+
+.setup-text {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--text-dim);
+}
+
+.setup-link {
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--accent);
+}
+
+.setup-link:hover {
+  text-decoration: underline;
 }
 
 .placeholder {

@@ -129,56 +129,51 @@ pnpm -C frontend dev
 
 ## AI 助教（可选）
 
-默认关闭，关闭时判题主链路完全不受影响。配置走 OpenAI 兼容协议，任何兼容端点都可以接入：
+默认关闭，关闭时判题主链路完全不受影响。**凭据按用户配置**：每个账号在自己的「个人设置」页填写端点、模型与 API Key；未配置的账号看不到助教入口，也不会产生任何模型调用。
 
-```bash
-set OJ_AI_ENABLED=true
-set OJ_AI_BASE_URL=https://api.example.com/v1
-set OJ_AI_API_KEY=你的密钥
-set OJ_AI_MODEL=deepseek-chat
-```
+### 个人配置步骤
+
+1. 登录后打开侧边栏「个人设置」
+2. 填写：
+   - 模型端点：OpenAI 兼容地址，写到 `/v1` 为止（程序会自动拼接 `/chat/completions`）
+   - 模型名称：如 `qwen-plus`，必须支持 function calling
+   - API Key：加密存储，页面只显示 `sk-****1234`
+3. 点「测试连接」，返回 `连接成功` 即配置可用
+4. 保存后打开任意非 AC 提交即可使用
 
 ### 接入阿里云百炼
 
-百炼提供 OpenAI 兼容模式，`base-url` 写到 `/v1` 为止，程序会自动拼接 `/chat/completions`：
-
-```properties
-oj.ai.enabled=true
-oj.ai.base-url=https://dashscope.aliyuncs.com/compatible-mode/v1
-oj.ai.api-key=sk-你的密钥
-oj.ai.model=qwen-plus
-```
-
-| 模型 | 说明 |
+| 项 | 值 |
 |---|---|
-| `qwen-plus` | 推荐，支持 function calling，本项目的工具调用依赖该能力 |
-| `qwen-max` | 效果更好，费用更高 |
-| `qwen-turbo` | 响应快，提示质量一般 |
+| 端点 | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| 推荐模型 | `qwen-plus`（支持工具调用）；也可用 `qwen-max` / `qwen-turbo` |
 
-专属 MaaS 端点（形如 `https://llm-xxxx.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`）同样适用，只替换 `base-url` 即可。海外账号使用 `dashscope-intl.aliyuncs.com`。
+专属 MaaS 端点（形如 `https://llm-xxxx.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`）同样适用，只替换端点即可。海外账号使用 `dashscope-intl.aliyuncs.com`。
+
+### 安全与运维
+
+- API Key 使用 AES-GCM 加密后存入 `user_ai_config`，加密密钥来自环境变量 `OJ_SECRET_KEY`（默认值为开发占位，部署必须替换）
+- 管理员可在「用户管理 → AI 配置」查看某人是否已配置、清空其配置，**看不到明文 Key**
+- 用户未配置或停用时，`/api/ai/status` 返回 `enabled=false`，前端不渲染入口并在顶部提示「去配置」
+- 全局开关 `OJ_AI_ENABLED` 仍是总闸，关闭后所有用户都无法使用
 
 ### 本地配置覆盖
 
-Spring Boot 会读取工作目录下的 `config/application.properties`，优先级高于 jar 内配置。可以把本机数据库密码和 AI 密钥放在这里，该路径已加入 `.gitignore`，不会进入仓库：
+Spring Boot 会读取工作目录下的 `config/application.properties`（已加入 `.gitignore`），常用于存放本机数据库密码：
 
 ```properties
 spring.datasource.password=你的数据库密码
-
-oj.ai.enabled=true
-oj.ai.base-url=https://dashscope.aliyuncs.com/compatible-mode/v1
-oj.ai.api-key=sk-你的密钥
-oj.ai.model=qwen-plus
 ```
 
-改完需重启后端，配置只在启动时加载。
+AI 凭据不要写在这里，请到「个人设置」页填写。
 
 - 分级提示：思路 → 定位 → 检查点，首次只给方向，可点「再具体一点」逐层深入。
 - 可追问：内置常用快捷问题，也可输入自定义问题；同一提交的历史问答会持久化并回看。
 - 结果复用：同一提交 + 同一问题 + 同一层级直接回放已存回答，不重复消耗额度。
 - Agent 只能通过受控工具读取信息，且拿到的是**脱敏摘要**（失败点序号、错误类型、输出形状），不含测试数据内容。
 - 限流：每用户每日 100 次、全局每日 500 次；最小间隔默认关闭（`OJ_AI_MIN_INTERVAL_SECONDS` 设为正数即可开启冷却）；最多 3 步推理。
-- 已 AC 的提交不提供助教；模块未启用时前端不渲染入口。
-- 密钥只从环境变量注入，仓库内没有任何真实密钥。
+- 已 AC 的提交不提供助教；未配置或停用的用户不渲染入口。
+- API Key 加密存储于数据库，仓库内没有任何真实密钥。
 
 ## 测试
 

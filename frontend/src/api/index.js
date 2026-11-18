@@ -25,6 +25,12 @@ export const hintApi = {
   history: (submissionId) => http.get(`/submissions/${submissionId}/hints`)
 }
 
+export const aiConfigApi = {
+  get: () => http.get('/me/ai-config'),
+  save: (payload) => http.put('/me/ai-config', payload),
+  test: () => http.post('/me/ai-config/test')
+}
+
 export const adminApi = {
   listProblems: (params) => http.get('/admin/problems', { params }),
   detailProblem: (id) => http.get(`/admin/problems/${id}`),
@@ -37,7 +43,9 @@ export const adminUserApi = {
   list: (params) => http.get('/admin/users', { params }),
   updateStatus: (id, status) => http.patch(`/admin/users/${id}/status`, { status }),
   resetPassword: (id) => http.post(`/admin/users/${id}/reset-password`),
-  create: (payload) => http.post('/admin/users', payload)
+  create: (payload) => http.post('/admin/users', payload),
+  aiConfig: (id) => http.get(`/admin/users/${id}/ai-config`),
+  clearAiConfig: (id) => http.delete(`/admin/users/${id}/ai-config`)
 }
 
 export const TERMINAL_STATUSES = ['AC', 'WA', 'TLE', 'MLE', 'RE', 'CE', 'REJECTED']

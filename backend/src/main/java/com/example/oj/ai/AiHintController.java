@@ -1,6 +1,7 @@
 package com.example.oj.ai;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.example.oj.ai.llm.LlmCredentials;
 import com.example.oj.common.BusinessException;
 import com.example.oj.common.ErrorCode;
 import com.example.oj.common.Result;
@@ -10,6 +11,7 @@ import com.example.oj.entity.AiHint;
 import com.example.oj.entity.Submission;
 import com.example.oj.mapper.AiHintMapper;
 import com.example.oj.mapper.SubmissionMapper;
+import com.example.oj.service.UserAiConfigService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
@@ -38,6 +40,7 @@ public class AiHintController {
     private static final long SSE_TIMEOUT_MS = 35_000L;
     private static final int CHUNK_SIZE = 12;
     private static final int HISTORY_LIMIT = 20;
+    private static final int QUESTION_LIMIT = 500;
     private static final Set<String> TERMINAL_STATUSES =
             Set.of("AC", "WA", "TLE", "MLE", "RE", "CE", "REJECTED");
 
@@ -46,6 +49,7 @@ public class AiHintController {
     private final AiHintMapper aiHintMapper;
     private final HintQuotaService quotaService;
     private final AgentOrchestrator orchestrator;
+    private final UserAiConfigService userAiConfigService;
     private final ObjectMapper objectMapper;
     private final ExecutorService aiExecutor;
 
@@ -54,6 +58,7 @@ public class AiHintController {
                             AiHintMapper aiHintMapper,
                             HintQuotaService quotaService,
                             AgentOrchestrator orchestrator,
+                            UserAiConfigService userAiConfigService,
                             ObjectMapper objectMapper,
                             @Qualifier("aiExecutor") ExecutorService aiExecutor) {
         this.aiProperties = aiProperties;
@@ -61,6 +66,7 @@ public class AiHintController {
         this.aiHintMapper = aiHintMapper;
         this.quotaService = quotaService;
         this.orchestrator = orchestrator;
+        this.userAiConfigService = userAiConfigService;
         this.objectMapper = objectMapper;
         this.aiExecutor = aiExecutor;
     }
@@ -92,9 +98,14 @@ public class AiHintController {
             return emitter;
         }
 
+        LlmCredentials credentials = userAiConfigService.resolve(userId);
+        if (credentials == null) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "请先在个人设置中配置 AI 模型");
+        }
+
         quotaService.checkAndConsume(userId);
         HintContext context = new HintContext(userId, submission.getProblemId(), submission.getId());
-        aiExecutor.execute(() -> runHint(emitter, context, submission, question, level));
+        aiExecutor.execute(() -> runHint(emitter, context, credentials, submission, question, level));
         return emitter;
     }
 
@@ -113,10 +124,10 @@ public class AiHintController {
         return Result.ok(ordered.stream().map(HintView::of).toList());
     }
 
-    private void runHint(SseEmitter emitter, HintContext context, Submission submission,
-                         String question, int level) {
+    private void runHint(SseEmitter emitter, HintContext context, LlmCredentials credentials,
+                         Submission submission, String question, int level) {
         try {
-            HintResult result = orchestrator.orchestrate(context, question, level, trace -> {
+            HintResult result = orchestrator.orchestrate(context, credentials, question, level, trace -> {
                 try {
                     emitter.send(SseEmitter.event().name("tool_call").data(Map.of(
                             "tool", trace.name(),
@@ -166,7 +177,7 @@ public class AiHintController {
         AiHint hint = new AiHint();
         hint.setSubmissionId(submission.getId());
         hint.setUserId(submission.getUserId());
-        hint.setQuestion(question.length() > 500 ? question.substring(0, 500) : question);
+        hint.setQuestion(truncateQuestion(question));
         hint.setLevel(level);
         hint.setAnswer(result.content());
         hint.setToolCalls(objectMapper.writeValueAsString(result.toolTraces()));
@@ -194,7 +205,7 @@ public class AiHintController {
         return aiHintMapper.selectOne(new LambdaQueryWrapper<AiHint>()
                 .eq(AiHint::getSubmissionId, submissionId)
                 .eq(AiHint::getUserId, userId)
-                .eq(AiHint::getQuestion, question)
+                .eq(AiHint::getQuestion, truncateQuestion(question))
                 .eq(AiHint::getLevel, level)
                 .eq(AiHint::getStatus, "OK")
                 .orderByDesc(AiHint::getId)
@@ -224,6 +235,10 @@ public class AiHintController {
             return 1;
         }
         return AgentOrchestrator.normalizeLevel(request.level());
+    }
+
+    private static String truncateQuestion(String question) {
+        return question.length() > QUESTION_LIMIT ? question.substring(0, QUESTION_LIMIT) : question;
     }
 
     private List<String> chunks(String content) {

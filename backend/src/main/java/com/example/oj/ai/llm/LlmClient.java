@@ -5,7 +5,7 @@ import java.util.Map;
 
 public interface LlmClient {
 
-    LlmResponse chat(List<LlmMessage> messages, List<ToolDefinition> tools);
+    LlmResponse chat(LlmCredentials credentials, List<LlmMessage> messages, List<ToolDefinition> tools);
 
     record LlmResponse(String content, List<ToolCall> toolCalls, int promptTokens, int completionTokens) {
 

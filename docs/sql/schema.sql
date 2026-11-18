@@ -139,6 +139,20 @@ CREATE TABLE IF NOT EXISTS `ai_hint` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI 助教问答记录';
 
 -- ------------------------------------------------------------
+-- 6.1 用户级 AI 凭据（每用户独立配置，API Key 加密存储）
+--     未配置的用户不能使用 AI 助教
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `user_ai_config` (
+  `user_id`     BIGINT UNSIGNED NOT NULL                COMMENT '用户 ID，对应 user.id',
+  `enabled`     TINYINT         NOT NULL DEFAULT 1      COMMENT '1 启用 0 停用',
+  `base_url`    VARCHAR(512)    NOT NULL DEFAULT ''     COMMENT 'OpenAI 兼容端点',
+  `api_key_enc` VARCHAR(1024)   NOT NULL DEFAULT ''     COMMENT 'AES-GCM 加密后的 API Key',
+  `model`       VARCHAR(64)     NOT NULL DEFAULT ''     COMMENT '模型标识',
+  `updated_at`  DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户级 AI 凭据';
+
+-- ------------------------------------------------------------
 -- 7. 初始化数据
 --    下方 password_hash 为 BCrypt(cost=10) 的占位示例值，不对应任何明文密码。
 --    首次部署必须用程序生成真实哈希后替换，否则无法登录。
@@ -349,8 +363,8 @@ WHERE p.`title` = '排序去重'
 -- ------------------------------------------------------------
 -- 8. AI 助手相关配置（应用配置项，非数据库存储，此处仅作说明）
 --   OJ_AI_ENABLED=true
---   OJ_AI_BASE_URL=              # OpenAI 兼容端点，禁止硬编码进仓库
---   OJ_AI_API_KEY=               # 从环境变量注入，禁止入库
+--   OJ_SECRET_KEY=               # 用户 API Key 的 AES-GCM 加密密钥，部署必须替换
+--   提示：AI 端点/模型/Key 由每个用户在自己的「个人设置」页配置，不在此处填写
 --   OJ_AI_MODEL=deepseek-chat
 --   OJ_AI_MAX_STEPS=3
 --   OJ_AI_TIMEOUT_SECONDS=30

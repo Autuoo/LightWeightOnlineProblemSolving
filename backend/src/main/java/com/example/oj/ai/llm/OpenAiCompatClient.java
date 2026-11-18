@@ -33,14 +33,15 @@ public class OpenAiCompatClient implements LlmClient {
     }
 
     @Override
-    public LlmResponse chat(List<LlmMessage> messages, List<ToolDefinition> tools) {
-        if (properties.getBaseUrl() == null || properties.getBaseUrl().isBlank()
-                || properties.getApiKey() == null || properties.getApiKey().isBlank()) {
+    public LlmResponse chat(LlmCredentials credentials, List<LlmMessage> messages, List<ToolDefinition> tools) {
+        if (credentials == null
+                || credentials.baseUrl() == null || credentials.baseUrl().isBlank()
+                || credentials.apiKey() == null || credentials.apiKey().isBlank()) {
             throw new BusinessException(ErrorCode.AI_UNAVAILABLE, "未配置模型端点或密钥");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", properties.getModel());
+        body.put("model", credentials.model());
         body.put("messages", messages.stream().map(this::toMessageMap).toList());
         body.put("temperature", properties.getTemperature());
         body.put("max_tokens", properties.getMaxTokens());
@@ -52,8 +53,8 @@ public class OpenAiCompatClient implements LlmClient {
         String raw;
         try {
             raw = restClient.post()
-                    .uri(normalizeBaseUrl() + "/chat/completions")
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getApiKey())
+                    .uri(normalizeBaseUrl(credentials.baseUrl()) + "/chat/completions")
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + credentials.apiKey())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
                     .retrieve()
@@ -123,8 +124,8 @@ public class OpenAiCompatClient implements LlmClient {
         return item;
     }
 
-    private String normalizeBaseUrl() {
-        String baseUrl = properties.getBaseUrl().trim();
-        return baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+    private String normalizeBaseUrl(String baseUrl) {
+        String value = baseUrl.trim();
+        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 }

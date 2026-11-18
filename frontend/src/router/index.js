@@ -19,6 +19,7 @@ const routes = [
       { path: 'leaderboard', name: 'leaderboard', component: () => import('../views/Leaderboard.vue') },
       { path: 'submissions', name: 'submissions', component: () => import('../views/SubmissionList.vue') },
       { path: 'submissions/:id', name: 'submission-detail', component: () => import('../views/SubmissionDetail.vue') },
+      { path: 'settings', name: 'settings', component: () => import('../views/Settings.vue') },
       {
         path: 'admin/problems',
         name: 'admin-problems',

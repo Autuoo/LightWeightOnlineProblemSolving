@@ -1,6 +1,7 @@
 package com.example.oj.ai;
 
 import com.example.oj.ai.llm.LlmClient;
+import com.example.oj.ai.llm.LlmCredentials;
 import com.example.oj.ai.llm.LlmMessage;
 import com.example.oj.config.AiProperties;
 import org.springframework.stereotype.Component;
@@ -36,7 +37,7 @@ public class AgentOrchestrator {
         this.properties = properties;
     }
 
-    public HintResult orchestrate(HintContext context, String question, int level,
+    public HintResult orchestrate(HintContext context, LlmCredentials credentials, String question, int level,
                                   Consumer<HintResult.ToolTrace> onToolCall) {
         int normalized = normalizeLevel(level);
         List<LlmMessage> messages = new ArrayList<>();
@@ -58,7 +59,7 @@ public class AgentOrchestrator {
         int completionTokens = 0;
 
         for (int step = 0; step < properties.getMaxSteps(); step++) {
-            LlmClient.LlmResponse response = llmClient.chat(messages, toolRegistry.schemas());
+            LlmClient.LlmResponse response = llmClient.chat(credentials, messages, toolRegistry.schemas());
             promptTokens += response.promptTokens();
             completionTokens += response.completionTokens();
 
