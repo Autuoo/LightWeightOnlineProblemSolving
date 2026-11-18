@@ -64,24 +64,25 @@
 
       <section class="panel rise">
         <div class="card-head">
-          <h2>今日刷题</h2>
+          <h2>今日概览</h2>
           <span class="sub mono">{{ todayLabel }}</span>
         </div>
+        <p class="card-desc">按提交时间统计，包含仍在判题中的记录；悬停卡片可查看说明。</p>
 
         <div class="stat-grid">
-          <div class="stat">
+          <div class="stat" :title="`今天共提交 ${stats.today.submissions} 次`">
             <span class="stat-num">{{ stats.today.submissions }}</span>
-            <span class="stat-label">提交</span>
+            <span class="stat-label">提交次数</span>
           </div>
-          <div class="stat">
+          <div class="stat" :title="`今天共有 ${stats.today.accepted} 次通过`">
             <span class="stat-num green">{{ stats.today.accepted }}</span>
-            <span class="stat-label">通过</span>
+            <span class="stat-label">通过次数</span>
           </div>
-          <div class="stat">
+          <div class="stat" :title="`通过率 ${stats.today.acceptanceRate}%，即通过次数 / 提交次数`">
             <span class="stat-num">{{ stats.today.acceptanceRate }}<i>%</i></span>
             <span class="stat-label">通过率</span>
           </div>
-          <div class="stat">
+          <div class="stat" :title="`今天通过的不同题目共 ${stats.today.solvedProblems} 道`">
             <span class="stat-num">{{ stats.today.solvedProblems }}</span>
             <span class="stat-label">通过题目</span>
           </div>
@@ -96,7 +97,12 @@
         </div>
 
         <div class="chart">
-          <div v-for="(point, index) in stats.trend" :key="point.date" class="chart-col">
+          <div
+            v-for="(point, index) in stats.trend"
+            :key="point.date"
+            class="chart-col"
+            :title="`${point.date}：提交 ${point.submissions}，通过 ${point.accepted}`"
+          >
             <div class="bars">
               <div
                 class="bar total"
@@ -119,6 +125,36 @@
       <div class="card-head">
         <h2>刷题记录</h2>
         <span class="sub mono">共 {{ recordTotal }} 条 · 第 {{ recordPage }} 页</span>
+      </div>
+
+      <div class="record-filters">
+        <input
+          v-model.trim="filters.keyword"
+          class="input filter-input"
+          placeholder="搜索题目名称"
+          @keyup.enter="applyFilters"
+        />
+        <select v-model="filters.status" class="input filter-select">
+          <option value="">全部状态</option>
+          <option value="AC">AC</option>
+          <option value="WA">WA</option>
+          <option value="TLE">TLE</option>
+          <option value="MLE">MLE</option>
+          <option value="RE">RE</option>
+          <option value="CE">CE</option>
+        </select>
+        <select v-model="filters.range" class="input filter-select">
+          <option value="all">全部时间</option>
+          <option value="today">今天</option>
+          <option value="7">近 7 天</option>
+          <option value="30">近 30 天</option>
+        </select>
+        <button class="btn btn-primary mini" :disabled="recordLoading" @click="applyFilters">
+          筛选
+        </button>
+        <button class="btn btn-ghost mini" :disabled="recordLoading" @click="resetFilters">
+          重置
+        </button>
       </div>
 
       <div class="record-table">
@@ -325,6 +361,7 @@ const recordPage = ref(1)
 const recordSize = 10
 const recordTotal = ref(0)
 const recordLoading = ref(false)
+const filters = reactive({ keyword: '', status: '', range: 'all' })
 
 const passwordForm = reactive({ oldPassword: '', newPassword: '', confirmPassword: '' })
 const savingPassword = ref(false)
@@ -499,10 +536,36 @@ async function loadStats() {
   }
 }
 
+function formatDateParam(date) {
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+function buildRecordParams(page) {
+  const params = { page, size: recordSize }
+  if (filters.keyword) {
+    params.keyword = filters.keyword
+  }
+  if (filters.status) {
+    params.status = filters.status
+  }
+  const today = new Date()
+  if (filters.range === 'today') {
+    params.from = formatDateParam(today)
+    params.to = formatDateParam(today)
+  } else if (filters.range === '7' || filters.range === '30') {
+    const from = new Date(today)
+    from.setDate(from.getDate() - (filters.range === '7' ? 6 : 29))
+    params.from = formatDateParam(from)
+    params.to = formatDateParam(today)
+  }
+  return params
+}
+
 async function loadRecords(nextPage = recordPage.value) {
   recordLoading.value = true
   try {
-    const data = await submissionApi.list({ page: nextPage, size: recordSize })
+    const data = await submissionApi.list(buildRecordParams(nextPage))
     records.value = data.records || []
     recordPage.value = Number(data.page || nextPage)
     recordTotal.value = Number(data.total || 0)
@@ -511,6 +574,17 @@ async function loadRecords(nextPage = recordPage.value) {
   } finally {
     recordLoading.value = false
   }
+}
+
+function applyFilters() {
+  loadRecords(1)
+}
+
+function resetFilters() {
+  filters.keyword = ''
+  filters.status = ''
+  filters.range = 'all'
+  loadRecords(1)
 }
 
 function openRecord(id) {
@@ -610,38 +684,45 @@ onMounted(() => {
 
 <style scoped>
 .page {
-  padding: 30px 36px 52px;
-  max-width: 1180px;
+  padding: 34px 44px 60px;
+  max-width: 1280px;
 }
 
 .head {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 h1 {
-  margin: 0 0 6px;
-  font-size: 23px;
-  font-weight: 640;
-  letter-spacing: -0.015em;
+  margin: 0 0 8px;
+  font-size: 25px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
 }
 
 .sub {
   margin: 0;
   color: var(--text-faint);
-  font-size: 12.5px;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .top-grid,
 .bottom-grid {
   display: grid;
-  grid-template-columns: 1fr 1.15fr;
-  gap: 18px;
-  margin-bottom: 18px;
-  align-items: start;
+  grid-template-columns: 0.92fr 1.08fr;
+  gap: 20px;
+  margin-bottom: 20px;
+  align-items: stretch;
+}
+
+.bottom-grid {
+  grid-template-columns: 0.85fr 1.15fr;
 }
 
 .panel {
-  padding: 18px 20px 20px;
+  padding: 22px 24px 24px;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel + .panel {
@@ -650,15 +731,24 @@ h1 {
 
 .card-head {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 18px;
 }
 
 .card-head h2 {
   margin: 0;
-  font-size: 14px;
-  font-weight: 620;
+  font-size: 15px;
+  font-weight: 630;
+  letter-spacing: -0.01em;
+}
+
+.card-desc {
+  margin: -8px 0 16px;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--text-faint);
 }
 
 .profile-row {
@@ -771,7 +861,8 @@ h1 {
 }
 
 .link.danger {
-  margin-top: 14px;
+  margin-top: auto;
+  padding-top: 14px;
   color: var(--text-faint);
 }
 
@@ -781,30 +872,38 @@ h1 {
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
 .stat {
-  padding: 12px 12px 10px;
-  border-radius: 10px;
+  padding: 14px 16px;
+  border-radius: 11px;
   border: 1px solid var(--line);
   background: var(--bg-sunken);
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
+  cursor: help;
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.stat:hover {
+  border-color: rgba(45, 212, 191, 0.32);
+  background: var(--bg-elev-2);
+  transform: translateY(-1px);
 }
 
 .stat-num {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 660;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
 }
 
 .stat-num i {
   font-style: normal;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-faint);
   margin-left: 1px;
@@ -815,7 +914,7 @@ h1 {
 }
 
 .stat-label {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--text-faint);
 }
 
@@ -859,7 +958,7 @@ h1 {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  height: 122px;
+  height: 142px;
   padding-top: 6px;
 }
 
@@ -870,6 +969,13 @@ h1 {
   align-items: center;
   gap: 6px;
   height: 100%;
+  cursor: help;
+  border-radius: 6px;
+  transition: background 0.16s ease;
+}
+
+.chart-col:hover {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .bars {
@@ -903,6 +1009,28 @@ h1 {
   font-family: var(--mono);
 }
 
+.record-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-sunken);
+}
+
+.filter-input {
+  width: 220px;
+  height: 32px;
+}
+
+.filter-select {
+  width: 132px;
+  height: 32px;
+}
+
 .record-table {
   display: flex;
   flex-direction: column;
@@ -911,16 +1039,16 @@ h1 {
 .record-head,
 .record-row {
   display: grid;
-  grid-template-columns: 1.6fr 0.7fr 0.8fr 0.8fr 1fr;
+  grid-template-columns: 1.7fr 0.7fr 0.75fr 0.8fr 1.05fr;
   align-items: center;
   gap: 12px;
-  padding: 10px 8px;
+  padding: 12px 10px;
   width: 100%;
   text-align: left;
 }
 
 .record-head {
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -932,7 +1060,7 @@ h1 {
   border-bottom: 1px solid var(--line);
   background: transparent;
   color: var(--text-dim);
-  font-size: 12.5px;
+  font-size: 13px;
   cursor: pointer;
   transition: background 0.16s ease;
 }

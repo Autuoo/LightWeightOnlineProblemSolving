@@ -144,13 +144,28 @@ public class SubmissionService {
                 cases);
     }
 
-    public PageResponse<SubmissionListItem> list(Long userId, int pageNo, int size, Long problemId, String status) {
+    public PageResponse<SubmissionListItem> list(Long userId, int pageNo, int size, Long problemId,
+                                                 String status, String keyword,
+                                                 LocalDateTime from, LocalDateTime to) {
         Page<Submission> page = new Page<>(pageNo, Math.min(size, 100));
         LambdaQueryWrapper<Submission> wrapper = new LambdaQueryWrapper<Submission>()
                 .eq(Submission::getUserId, userId)
                 .eq(problemId != null, Submission::getProblemId, problemId)
                 .eq(status != null && !status.isBlank(), Submission::getStatus, status)
+                .ge(from != null, Submission::getCreatedAt, from)
+                .lt(to != null, Submission::getCreatedAt, to)
                 .orderByDesc(Submission::getCreatedAt);
+
+        if (keyword != null && !keyword.isBlank()) {
+            List<Long> problemIds = problemMapper.selectList(new LambdaQueryWrapper<Problem>()
+                            .like(Problem::getTitle, keyword.trim()))
+                    .stream().map(Problem::getId).toList();
+            if (problemIds.isEmpty()) {
+                return new PageResponse<>(List.of(), pageNo, size, 0);
+            }
+            wrapper.in(Submission::getProblemId, problemIds);
+        }
+
         Page<Submission> result = submissionMapper.selectPage(page, wrapper);
 
         Map<Long, String> titleMap = problemTitles(result.getRecords());
