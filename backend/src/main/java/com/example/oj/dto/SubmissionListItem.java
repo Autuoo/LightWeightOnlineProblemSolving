@@ -12,5 +12,6 @@ public record SubmissionListItem(
         Integer execTimeMs,
         Integer memoryKb,
         LocalDateTime createdAt,
-        LocalDateTime finishedAt) {
+        LocalDateTime finishedAt,
+        boolean suspicious) {
 }

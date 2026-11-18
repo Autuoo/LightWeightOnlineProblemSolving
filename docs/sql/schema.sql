@@ -86,6 +86,8 @@ CREATE TABLE IF NOT EXISTS `submission` (
   `memory_kb`     INT             NULL                    COMMENT '最大单点内存',
   `compile_output` TEXT           NULL                    COMMENT '编译输出（截断至 8KB）',
   `error_message` VARCHAR(512)    NULL                    COMMENT '错误说明',
+  `suspicious`    TINYINT         NOT NULL DEFAULT 0      COMMENT '1 命中打表特征，仅标记不扣分',
+  `suspicious_reason` VARCHAR(255) NULL                   COMMENT '命中原因（启发式）',
   `finished_at`   DATETIME(3)     NULL                    COMMENT '进入终态时间',
   `created_at`    DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   `updated_at`    DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),

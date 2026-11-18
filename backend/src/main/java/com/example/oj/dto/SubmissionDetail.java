@@ -15,6 +15,8 @@ public record SubmissionDetail(
         Integer memoryKb,
         String compileOutput,
         String errorMessage,
+        boolean suspicious,
+        String suspiciousReason,
         LocalDateTime createdAt,
         LocalDateTime finishedAt,
         List<CaseView> cases) {

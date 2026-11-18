@@ -24,6 +24,8 @@ public class Submission {
     private Integer memoryKb;
     private String compileOutput;
     private String errorMessage;
+    private Integer suspicious;
+    private String suspiciousReason;
     private LocalDateTime finishedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -44,6 +44,7 @@ export const profileApi = {
 }
 
 export const adminApi = {
+  listSubmissions: (params) => http.get('/admin/submissions', { params }),
   listProblems: (params) => http.get('/admin/problems', { params }),
   detailProblem: (id) => http.get(`/admin/problems/${id}`),
   createProblem: (payload) => http.post('/admin/problems', payload),

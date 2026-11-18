@@ -52,12 +52,13 @@ public class SubmissionController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) Boolean suspicious,
             Authentication authentication) {
         LocalDateTime fromTime = from == null ? null : from.atStartOfDay();
         LocalDateTime toTime = to == null ? null : to.plusDays(1).atStartOfDay();
         return Result.ok(submissionService.list(
                 (Long) authentication.getPrincipal(), page, size, problemId, status, keyword,
-                fromTime, toTime));
+                fromTime, toTime, suspicious));
     }
 
     private boolean isAdmin(Authentication authentication) {

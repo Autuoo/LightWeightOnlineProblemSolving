@@ -34,6 +34,12 @@
             </span>
           </div>
           <h1>{{ detail.problemTitle || `题目 ${detail.problemId}` }}</h1>
+          <div v-if="auth.isAdmin && detail.suspicious" class="suspicious">
+            <span class="suspicious-tag">可疑提交</span>
+            <span class="suspicious-reason">
+              {{ detail.suspiciousReason || '命中打表特征，仅标记不影响得分' }}
+            </span>
+          </div>
           <div class="facts">
             <span class="fact"><i>语言</i><b class="mono">{{ detail.language }}</b></span>
             <span class="fact"><i>耗时</i><b class="mono">{{ detail.execTimeMs ?? '—' }} ms</b></span>
@@ -97,10 +103,12 @@ import StatusBadge from '../components/StatusBadge.vue'
 import CaseResultTable from '../components/CaseResultTable.vue'
 import HintPanel from '../components/HintPanel.vue'
 import { useSubmissionStore } from '../stores/submission'
+import { useAuthStore } from '../stores/auth'
 import { isTerminal } from '../api'
 
 const route = useRoute()
 const submissionStore = useSubmissionStore()
+const auth = useAuthStore()
 const { detail, connected } = storeToRefs(submissionStore)
 
 const finished = ref(false)
@@ -410,5 +418,26 @@ h1 {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+.suspicious {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 2px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  background: rgba(251, 191, 36, 0.07);
+}
+
+.suspicious-tag {
+  font-size: 11px;
+  font-weight: 650;
+  color: #fbbf24;
+}
+
+.suspicious-reason {
+  font-size: 11.5px;
+  color: var(--text-dim);
 }
 </style>

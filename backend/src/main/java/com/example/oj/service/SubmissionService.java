@@ -17,6 +17,7 @@ import com.example.oj.entity.SubmissionCaseResult;
 import com.example.oj.entity.TestCase;
 import com.example.oj.judge.JudgeDispatcher;
 import com.example.oj.judge.JudgeTask;
+import com.example.oj.judge.SuspiciousCodeDetector;
 import com.example.oj.mapper.ProblemMapper;
 import com.example.oj.mapper.SubmissionCaseResultMapper;
 import com.example.oj.mapper.SubmissionMapper;
@@ -44,6 +45,7 @@ public class SubmissionService {
     private final ProblemService problemService;
     private final JudgeDispatcher judgeDispatcher;
     private final JudgeProperties judgeProperties;
+    private final SuspiciousCodeDetector suspiciousCodeDetector;
 
     public SubmissionService(SubmissionMapper submissionMapper,
                              ProblemMapper problemMapper,
@@ -51,7 +53,8 @@ public class SubmissionService {
                              SubmissionCaseResultMapper caseResultMapper,
                              ProblemService problemService,
                              JudgeDispatcher judgeDispatcher,
-                             JudgeProperties judgeProperties) {
+                             JudgeProperties judgeProperties,
+                             SuspiciousCodeDetector suspiciousCodeDetector) {
         this.submissionMapper = submissionMapper;
         this.problemMapper = problemMapper;
         this.testCaseMapper = testCaseMapper;
@@ -59,6 +62,7 @@ public class SubmissionService {
         this.problemService = problemService;
         this.judgeDispatcher = judgeDispatcher;
         this.judgeProperties = judgeProperties;
+        this.suspiciousCodeDetector = suspiciousCodeDetector;
     }
 
     public SubmitResponse submit(Long userId, SubmitRequest request) {
@@ -81,6 +85,10 @@ public class SubmissionService {
         submission.setCodeHash(codeHash);
         submission.setStatus("PENDING");
         submission.setScore(0);
+        SuspiciousCodeDetector.Result detection =
+                suspiciousCodeDetector.detect(request.language(), request.code());
+        submission.setSuspicious(detection.suspicious() ? 1 : 0);
+        submission.setSuspiciousReason(detection.reason());
         submissionMapper.insert(submission);
 
         boolean accepted = judgeDispatcher.dispatch(
@@ -139,6 +147,8 @@ public class SubmissionService {
                 submission.getMemoryKb(),
                 submission.getCompileOutput(),
                 submission.getErrorMessage(),
+                submission.getSuspicious() != null && submission.getSuspicious() == 1,
+                submission.getSuspiciousReason(),
                 submission.getCreatedAt(),
                 submission.getFinishedAt(),
                 cases);
@@ -146,12 +156,14 @@ public class SubmissionService {
 
     public PageResponse<SubmissionListItem> list(Long userId, int pageNo, int size, Long problemId,
                                                  String status, String keyword,
-                                                 LocalDateTime from, LocalDateTime to) {
+                                                 LocalDateTime from, LocalDateTime to,
+                                                 Boolean suspicious) {
         Page<Submission> page = new Page<>(pageNo, Math.min(size, 100));
         LambdaQueryWrapper<Submission> wrapper = new LambdaQueryWrapper<Submission>()
                 .eq(Submission::getUserId, userId)
                 .eq(problemId != null, Submission::getProblemId, problemId)
                 .eq(status != null && !status.isBlank(), Submission::getStatus, status)
+                .eq(suspicious != null, Submission::getSuspicious, Boolean.TRUE.equals(suspicious) ? 1 : 0)
                 .ge(from != null, Submission::getCreatedAt, from)
                 .lt(to != null, Submission::getCreatedAt, to)
                 .orderByDesc(Submission::getCreatedAt);
@@ -180,7 +192,8 @@ public class SubmissionService {
                         item.getExecTimeMs(),
                         item.getMemoryKb(),
                         item.getCreatedAt(),
-                        item.getFinishedAt()))
+                        item.getFinishedAt(),
+                        item.getSuspicious() != null && item.getSuspicious() == 1))
                 .toList();
         return new PageResponse<>(records, result.getCurrent(), result.getSize(), result.getTotal());
     }
