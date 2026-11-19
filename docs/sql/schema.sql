@@ -1,11 +1,15 @@
 -- ============================================================
--- 轻量在线判题系统 数据库脚本 v0.2（含 AI 助教模块）
+-- 轻量在线判题系统 数据库脚本 v0.3（含 AI 助教模块）
 -- DB: MySQL 8.0 / InnoDB / utf8mb4
 -- 说明：
 --   1. 本期使用逻辑外键（不建 FK 约束），由应用层保证一致性，
 --      便于测试数据清理与后续分库。若课程要求强约束可自行补充。
 --   2. 第 6 节 ai_hint 为 AI 助教模块，可通过应用开关 OJ_AI_ENABLED 停用；
 --      停用后该表仅保留历史数据，不影响主链路。
+--   3. 本脚本的结构、演示账号、示例题库与测试点与当前演示库保持一致：
+--      6 道题、36 个测试点（每题 6 点，分值 17/17/17/17/16/16，合计 100）。
+--   4. 不包含运行期数据（提交记录、逐点结果、AI 问答、用户 AI 配置、
+--      上传头像、额外测试账号），避免泄露密钥、代码与个人信息。
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS `oj`
@@ -158,16 +162,16 @@ CREATE TABLE IF NOT EXISTS `user_ai_config` (
 
 -- ------------------------------------------------------------
 -- 7. 初始化数据
---    下方 password_hash 为 BCrypt(cost=10) 的占位示例值，不对应任何明文密码。
---    首次部署必须用程序生成真实哈希后替换，否则无法登录。
---    建议实现一个 CommandLineRunner，读取环境变量 OJ_ADMIN_PASSWORD 生成并更新。
+--    演示账号与当前演示库一致：admin / Admin@123（仅课程演示用）。
+--    stu001 为示例学生，哈希与当前演示库一致，密码以实际环境为准。
+--    生产部署必须替换为自行生成的强密码哈希。
 -- ------------------------------------------------------------
 INSERT INTO `user` (`username`, `password_hash`, `nickname`, `role`)
-SELECT 'admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '管理员', 'ADMIN'
+SELECT 'admin', '$2a$10$s6aysQxOqMb8n.Y0D2n36.55KTxBlZkQj2F9cM8KfYrqKSD0.B0vm', 'a001', 'ADMIN'
 WHERE NOT EXISTS (SELECT 1 FROM `user` WHERE `username` = 'admin');
 
 INSERT INTO `user` (`username`, `password_hash`, `nickname`, `role`)
-SELECT 'stu001', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '示例学生', 'STUDENT'
+SELECT 'stu001', '$2a$10$aKtjOs50tr/yzHqPHmdCCusTD0ykVpaIQMVq2kBBGMaelspo8NcMq', '示例学生', 'STUDENT'
 WHERE NOT EXISTS (SELECT 1 FROM `user` WHERE `username` = 'stu001');
 
 INSERT INTO `problem` (`title`, `description`, `samples`, `difficulty`, `time_limit_ms`, `memory_limit_mb`, `visible`, `created_by`)
@@ -182,7 +186,8 @@ WHERE NOT EXISTS (SELECT 1 FROM `problem` WHERE `title` = 'A+B Problem');
 
 
 -- ------------------------------------------------------------
--- 7.1 示例题库扩展：5 道基础题（每题 5 个测试点，每个 20 分）
+-- 7.1 示例题库扩展：5 道基础题（与当前演示库一致）
+-- 每题 6 个测试点，分值 17/17/17/17/16/16，合计 100 分
 -- ------------------------------------------------------------
 INSERT INTO `problem` (`title`, `description`, `samples`, `difficulty`, `time_limit_ms`, `memory_limit_mb`, `visible`, `created_by`)
 SELECT

@@ -8,6 +8,7 @@ backend/oj-sandbox/
 
 # 用户上传文件（头像等）
 /uploads/
+/backend/uploads/
 
 # 本地环境变量与密钥
 .env
