@@ -9,6 +9,7 @@ import com.example.oj.dto.TestCaseBatchRequest;
 import com.example.oj.service.AdminProblemService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -54,6 +55,12 @@ public class AdminProblemController {
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @Valid @RequestBody ProblemUpsertRequest request) {
         adminProblemService.update(id, request);
+        return Result.ok();
+    }
+
+    @DeleteMapping("/{id}")
+    public Result<Void> delete(@PathVariable Long id) {
+        adminProblemService.delete(id);
         return Result.ok();
     }
 

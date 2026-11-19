@@ -9,9 +9,15 @@ import com.example.oj.dto.AdminProblemItem;
 import com.example.oj.dto.PageResponse;
 import com.example.oj.dto.ProblemUpsertRequest;
 import com.example.oj.dto.TestCaseBatchRequest;
+import com.example.oj.entity.AiHint;
 import com.example.oj.entity.Problem;
+import com.example.oj.entity.Submission;
+import com.example.oj.entity.SubmissionCaseResult;
 import com.example.oj.entity.TestCase;
+import com.example.oj.mapper.AiHintMapper;
 import com.example.oj.mapper.ProblemMapper;
+import com.example.oj.mapper.SubmissionCaseResultMapper;
+import com.example.oj.mapper.SubmissionMapper;
 import com.example.oj.mapper.TestCaseMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -31,13 +37,22 @@ public class AdminProblemService {
 
     private final ProblemMapper problemMapper;
     private final TestCaseMapper testCaseMapper;
+    private final SubmissionMapper submissionMapper;
+    private final SubmissionCaseResultMapper caseResultMapper;
+    private final AiHintMapper aiHintMapper;
     private final ObjectMapper objectMapper;
 
     public AdminProblemService(ProblemMapper problemMapper,
                                TestCaseMapper testCaseMapper,
+                               SubmissionMapper submissionMapper,
+                               SubmissionCaseResultMapper caseResultMapper,
+                               AiHintMapper aiHintMapper,
                                ObjectMapper objectMapper) {
         this.problemMapper = problemMapper;
         this.testCaseMapper = testCaseMapper;
+        this.submissionMapper = submissionMapper;
+        this.caseResultMapper = caseResultMapper;
+        this.aiHintMapper = aiHintMapper;
         this.objectMapper = objectMapper;
     }
 
@@ -137,6 +152,31 @@ public class AdminProblemService {
             testCase.setScore(item.score() == null ? 0 : item.score());
             testCaseMapper.insert(testCase);
         }
+    }
+
+    @Transactional
+    public void delete(Long problemId) {
+        if (problemMapper.selectById(problemId) == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND);
+        }
+
+        List<Long> submissionIds = submissionMapper.selectList(
+                        new LambdaQueryWrapper<Submission>().eq(Submission::getProblemId, problemId))
+                .stream()
+                .map(Submission::getId)
+                .toList();
+        if (!submissionIds.isEmpty()) {
+            caseResultMapper.delete(new LambdaQueryWrapper<SubmissionCaseResult>()
+                    .in(SubmissionCaseResult::getSubmissionId, submissionIds));
+            aiHintMapper.delete(new LambdaQueryWrapper<AiHint>()
+                    .in(AiHint::getSubmissionId, submissionIds));
+            submissionMapper.delete(new LambdaQueryWrapper<Submission>()
+                    .eq(Submission::getProblemId, problemId));
+        }
+
+        testCaseMapper.delete(new LambdaQueryWrapper<TestCase>()
+                .eq(TestCase::getProblemId, problemId));
+        problemMapper.deleteById(problemId);
     }
 
     private void apply(Problem problem, ProblemUpsertRequest request) {

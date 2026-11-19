@@ -43,8 +43,15 @@
           <span>{{ difficultyText(item.difficulty) }}</span>
           <span>{{ item.visible === 1 ? '是' : '否' }}</span>
           <span class="mono">{{ item.caseCount }}</span>
-          <span class="right">
+          <span class="right row-actions">
             <button class="btn btn-ghost mini" @click="editProblem(item.id)">编辑</button>
+            <button
+              class="btn btn-ghost mini danger"
+              :disabled="deletingId === item.id"
+              @click="removeProblem(item)"
+            >
+              {{ deletingId === item.id ? '删除中' : '删除' }}
+            </button>
           </span>
         </div>
         <div v-if="!problems.length" class="prob-empty">暂无题目</div>
@@ -187,6 +194,7 @@ const problemTotal = ref(0)
 const keyword = ref('')
 const listLoading = ref(false)
 const saving = ref(false)
+const deletingId = ref(null)
 const problemError = ref('')
 const problemOk = ref('')
 
@@ -282,6 +290,31 @@ function fillExample() {
     null,
     2
   )
+}
+
+async function removeProblem(item) {
+  const confirmed = window.confirm(
+    `确定删除题目《${item.title}》吗？\n该题的 ${item.caseCount} 个测试点和所有提交记录会一并删除，且无法恢复。`
+  )
+  if (!confirmed) return
+
+  deletingId.value = item.id
+  problemError.value = ''
+  problemOk.value = ''
+  try {
+    await adminApi.deleteProblem(item.id)
+    if (editingId.value === item.id) resetForm()
+    problemOk.value = `已删除题目《${item.title}》`
+    const nextPage =
+      problems.value.length === 1 && problemPage.value > 1
+        ? problemPage.value - 1
+        : problemPage.value
+    await loadProblems(nextPage)
+  } catch (error) {
+    problemError.value = error.message
+  } finally {
+    deletingId.value = null
+  }
 }
 
 function resetForm() {
@@ -401,12 +434,28 @@ h1 {
 
 .prob-row {
   display: grid;
-  grid-template-columns: 70px 1fr 80px 70px 80px 100px;
+  grid-template-columns: 70px 1fr 80px 70px 80px 130px;
   align-items: center;
   gap: 12px;
   padding: 9px 6px;
   font-size: 12.5px;
   border-bottom: 1px solid var(--line);
+}
+
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.mini.danger {
+  color: var(--err);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.mini.danger:hover {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.6);
 }
 
 .prob-row.active {

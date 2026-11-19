@@ -1,11 +1,14 @@
 package com.example.oj.controller;
 
 import com.example.oj.common.Result;
+import com.example.oj.dto.CustomRunRequest;
+import com.example.oj.dto.CustomRunResponse;
 import com.example.oj.dto.PageResponse;
 import com.example.oj.dto.SubmissionDetail;
 import com.example.oj.dto.SubmissionListItem;
 import com.example.oj.dto.SubmitRequest;
 import com.example.oj.dto.SubmitResponse;
+import com.example.oj.service.CustomRunService;
 import com.example.oj.service.SubmissionService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -27,14 +30,21 @@ import java.time.LocalDateTime;
 public class SubmissionController {
 
     private final SubmissionService submissionService;
+    private final CustomRunService customRunService;
 
-    public SubmissionController(SubmissionService submissionService) {
+    public SubmissionController(SubmissionService submissionService, CustomRunService customRunService) {
         this.submissionService = submissionService;
+        this.customRunService = customRunService;
     }
 
     @PostMapping
     public Result<SubmitResponse> submit(@Valid @RequestBody SubmitRequest request, Authentication authentication) {
         return Result.ok(submissionService.submit((Long) authentication.getPrincipal(), request));
+    }
+
+    @PostMapping("/custom-run")
+    public Result<CustomRunResponse> customRun(@Valid @RequestBody CustomRunRequest request) {
+        return Result.ok(customRunService.run(request));
     }
 
     @GetMapping("/{id}")

@@ -3,6 +3,7 @@ package com.example.oj.controller;
 import com.example.oj.common.Result;
 import com.example.oj.dto.LoginRequest;
 import com.example.oj.dto.LoginResponse;
+import com.example.oj.dto.RegisterRequest;
 import com.example.oj.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
@@ -25,6 +26,11 @@ public class AuthController {
     @PostMapping("/login")
     public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return Result.ok(authService.login(request));
+    }
+
+    @PostMapping("/register")
+    public Result<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
+        return Result.ok(authService.register(request));
     }
 
     @GetMapping("/me")

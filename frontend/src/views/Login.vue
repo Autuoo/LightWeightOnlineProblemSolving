@@ -26,16 +26,22 @@
       </div>
     </section>
 
-    <section class="auth-panel" aria-labelledby="login-title">
-      <h2 id="login-title">欢迎回来</h2>
-      <p class="panel-hint">登录账号，继续刷题和查看成长记录</p>
+    <section class="auth-panel" aria-labelledby="auth-title">
+      <h2 id="auth-title">{{ isRegister ? '创建账号' : '欢迎回来' }}</h2>
+      <p class="panel-hint">{{ isRegister ? '注册学生账号，开始刷题并记录每一步成长' : '登录账号，继续刷题和查看成长记录' }}</p>
       <form @submit.prevent="onSubmit">
-        <label class="field"><span>用户名</span><input v-model.trim="username" class="input" autocomplete="username" placeholder="请输入用户名" /></label>
-        <label class="field"><span>密码</span><input v-model="password" class="input" type="password" autocomplete="current-password" placeholder="请输入密码" /></label>
+        <label class="field"><span>用户名</span><input v-model.trim="username" class="input" autocomplete="username" :placeholder="isRegister ? '3-32 位字母、数字或下划线' : '请输入用户名'" /></label>
+        <label v-if="isRegister" class="field"><span>昵称<span class="optional">（可选）</span></span><input v-model.trim="nickname" class="input" autocomplete="nickname" placeholder="展示在排行榜与个人中心，默认同用户名" /></label>
+        <label class="field"><span>密码</span><input v-model="password" class="input" type="password" :autocomplete="isRegister ? 'new-password' : 'current-password'" :placeholder="isRegister ? '6-64 位字符' : '请输入密码'" /></label>
+        <label v-if="isRegister" class="field"><span>确认密码</span><input v-model="confirmPassword" class="input" type="password" autocomplete="new-password" placeholder="请再次输入密码" /></label>
         <p v-if="auth.error" class="error" role="alert">{{ auth.error }}</p>
-        <button class="submit" type="submit" :disabled="auth.loading"><span v-if="auth.loading" class="spinner" /><span class="submit-label">{{ auth.loading ? '验证中…' : '进入控制台' }}</span><span v-if="!auth.loading" class="arrow" aria-hidden="true">↗</span></button>
+        <button class="submit" type="submit" :disabled="auth.loading"><span v-if="auth.loading" class="spinner" /><span class="submit-label">{{ submitLabel }}</span><span v-if="!auth.loading" class="arrow" aria-hidden="true">↗</span></button>
       </form>
-      <div class="demo"><span>想先体验？</span><button type="button" @click="fillDemo">填入演示账号 <span>↗</span></button></div>
+      <div class="demo">
+        <span>{{ isRegister ? '已经有账号？' : '还没有账号？' }}</span>
+        <button type="button" class="switch-mode" @click="switchMode">{{ isRegister ? '返回登录' : '立即注册' }} <span>↗</span></button>
+      </div>
+      <div v-if="!isRegister" class="demo demo-extra"><span>想先体验？</span><button type="button" @click="fillDemo">填入演示账号 <span>↗</span></button></div>
     </section>
 
     <footer class="page-foot"><span>BUILD · SOLVE · GROW</span><span>每一次 AC，都是新的起点。</span></footer>
@@ -43,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import GrowthScene from '../components/GrowthScene.vue'
@@ -51,8 +57,15 @@ import GrowthScene from '../components/GrowthScene.vue'
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+const isRegister = ref(false)
 const username = ref('admin')
+const nickname = ref('')
 const password = ref('')
+const confirmPassword = ref('')
+const submitLabel = computed(() => {
+  if (auth.loading) return isRegister.value ? '注册中…' : '验证中…'
+  return isRegister.value ? '注册并进入' : '进入控制台'
+})
 const activeStage = ref(0)
 const stages = [
   { label: 'LEVEL 01 · THE FIRST LINE', short: '起点', title: '从 Hello World，', accent: '开始。', description: '第一行代码，第一次运行成功。你的算法旅程由此展开。', code: 'print("Hello, World!")' },
@@ -62,10 +75,51 @@ const stages = [
 ]
 
 function fillDemo() { username.value = 'admin'; password.value = 'Admin@123' }
+
+function switchMode() {
+  isRegister.value = !isRegister.value
+  auth.error = ''
+  password.value = ''
+  confirmPassword.value = ''
+  if (isRegister.value && username.value === 'admin' && !nickname.value) username.value = ''
+}
+
+function validateRegister() {
+  if (!/^[A-Za-z0-9_]{3,32}$/.test(username.value)) {
+    auth.error = '用户名只能包含字母、数字、下划线，长度 3-32'
+    return false
+  }
+  if (password.value.length < 6 || password.value.length > 64) {
+    auth.error = '密码长度需在 6-64 之间'
+    return false
+  }
+  if (password.value !== confirmPassword.value) {
+    auth.error = '两次输入的密码不一致'
+    return false
+  }
+  if (nickname.value.length > 32) {
+    auth.error = '昵称不能超过 32 个字符'
+    return false
+  }
+  return true
+}
+
 async function onSubmit() {
   if (!username.value || !password.value) { auth.error = '请输入用户名和密码'; return }
+  if (isRegister.value) {
+    if (!confirmPassword.value) { auth.error = '请再次输入密码'; return }
+    if (!validateRegister()) return
+  }
   try {
-    await auth.login(username.value, password.value)
+    if (isRegister.value) {
+      await auth.register({
+        username: username.value,
+        nickname: nickname.value || null,
+        password: password.value
+      })
+    } else {
+      await auth.login(username.value, password.value)
+    }
     router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : '/problems')
   } catch { /* 错误已写入 store */ }
 }
@@ -114,4 +168,8 @@ async function onSubmit() {
 .demo button{font:600 12px var(--sans)}
 @media(max-width:960px){.cinema-shade{background:linear-gradient(90deg,#f4fbf8e8,#f4fbf888),linear-gradient(0deg,#f4fbf8 0%,transparent 38%,#f4fbf8b8 100%)}}
 @media(max-width:600px){.auth-panel{padding:28px 22px 24px}.auth-panel h2{font-size:24px}.panel-hint{margin-bottom:23px}}
+.optional{margin-left:2px;color:#93ada1;font-weight:400}
+.demo-extra{margin-top:10px;border-top:0;padding-top:0}
+.demo .switch-mode{font-weight:600}
+.login-page{overflow-x:hidden;overflow-y:auto}
 </style>

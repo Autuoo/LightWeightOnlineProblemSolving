@@ -102,7 +102,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
+
 import { hintApi } from '../api'
 import { API_BASE } from '../api/config'
 import { useAuthStore } from '../stores/auth'
@@ -114,7 +114,7 @@ const submissionStore = useSubmissionStore()
 const router = useRouter()
 const { theme, toggle: toggleTheme } = useTheme()
 
-const { connected } = storeToRefs(submissionStore)
+const connected = computed(() => submissionStore.connected)
 
 const initial = computed(() => {
   const name = auth.user?.nickname || auth.user?.username || '?'
@@ -429,7 +429,7 @@ function logout() {
   margin-top: 2px;
   font-size: 11.5px;
   line-height: 1.65;
-  color: rgba(246, 217, 138, 0.72);
+  color: rgba(246, 217, 138, 0.9);
 }
 
 .ai-cta {
@@ -487,7 +487,48 @@ function logout() {
 .main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   position: relative;
+}
+
+[data-theme="light"] .ai-notice {
+  color: #7a4306;
+  background: linear-gradient(
+    90deg,
+    rgba(251, 191, 36, 0.34),
+    rgba(251, 191, 36, 0.16) 55%,
+    rgba(251, 191, 36, 0.26)
+  );
+  border-bottom-color: rgba(180, 83, 9, 0.45);
+  box-shadow: 0 10px 26px -22px rgba(146, 64, 14, 0.45);
+}
+
+[data-theme="light"] .ai-icon {
+  background: rgba(251, 191, 36, 0.32);
+  border-color: rgba(180, 83, 9, 0.4);
+}
+
+[data-theme="light"] .ai-icon svg {
+  stroke: #b45309;
+}
+
+[data-theme="light"] .ai-title {
+  color: #713f12;
+}
+
+[data-theme="light"] .ai-desc {
+  color: #6b4a10;
+}
+
+[data-theme="light"] .ai-close {
+  color: #7c5a13;
+}
+
+[data-theme="light"] .ai-close:hover {
+  background: rgba(251, 191, 36, 0.28);
+  color: #713f12;
 }
 </style>

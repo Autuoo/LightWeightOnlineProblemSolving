@@ -2,6 +2,7 @@ import http from './http'
 
 export const authApi = {
   login: (payload) => http.post('/auth/login', payload),
+  register: (payload) => http.post('/auth/register', payload),
   me: () => http.get('/auth/me')
 }
 
@@ -12,6 +13,7 @@ export const problemApi = {
 
 export const submissionApi = {
   submit: (payload) => http.post('/submissions', payload),
+  runCustom: (payload) => http.post('/submissions/custom-run', payload, { timeout: 40000 }),
   detail: (id) => http.get(`/submissions/${id}`),
   list: (params) => http.get('/submissions', { params })
 }
@@ -49,7 +51,8 @@ export const adminApi = {
   detailProblem: (id) => http.get(`/admin/problems/${id}`),
   createProblem: (payload) => http.post('/admin/problems', payload),
   updateProblem: (id, payload) => http.put(`/admin/problems/${id}`, payload),
-  replaceTestCases: (id, payload) => http.post(`/admin/problems/${id}/test-cases`, payload)
+  replaceTestCases: (id, payload) => http.post(`/admin/problems/${id}/test-cases`, payload),
+  deleteProblem: (id) => http.delete(`/admin/problems/${id}`)
 }
 
 export const adminUserApi = {

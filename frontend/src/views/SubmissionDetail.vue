@@ -106,7 +106,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { storeToRefs } from 'pinia'
 import StatusBadge from '../components/StatusBadge.vue'
 import CaseResultTable from '../components/CaseResultTable.vue'
 import HintPanel from '../components/HintPanel.vue'
@@ -117,7 +116,8 @@ import { isTerminal } from '../api'
 const route = useRoute()
 const submissionStore = useSubmissionStore()
 const auth = useAuthStore()
-const { detail, connected } = storeToRefs(submissionStore)
+const detail = computed(() => submissionStore.detail)
+const connected = computed(() => submissionStore.connected)
 
 const finished = ref(false)
 const live = computed(() => !finished.value && connected.value)

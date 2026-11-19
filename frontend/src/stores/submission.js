@@ -6,6 +6,7 @@ import { WS_BASE } from '../api/config'
 import { useAuthStore } from './auth'
 
 let stompClient = null
+let pollTimer = null
 
 export const useSubmissionStore = defineStore('submission', {
   state: () => ({
@@ -116,14 +117,14 @@ export const useSubmissionStore = defineStore('submission', {
           /* 网络抖动时继续下一轮 */
         }
       }, 1600)
-      this.pollTimer = timer
+      pollTimer = timer
     },
 
     stopPolling() {
       this.polling = false
-      if (this.pollTimer) {
-        clearInterval(this.pollTimer)
-        this.pollTimer = null
+      if (pollTimer) {
+        clearInterval(pollTimer)
+        pollTimer = null
       }
     },
 

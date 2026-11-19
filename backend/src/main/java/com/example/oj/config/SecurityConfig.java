@@ -49,7 +49,7 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(
                                 jakarta.servlet.DispatcherType.ASYNC,
                                 jakarta.servlet.DispatcherType.ERROR).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register").permitAll()
                         .requestMatchers("/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()

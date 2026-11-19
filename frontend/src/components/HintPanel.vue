@@ -784,4 +784,13 @@ watch(
     transform: rotate(360deg);
   }
 }
+
+[data-theme="light"] .setup {
+  border-color: rgba(180, 83, 9, 0.4);
+  background: linear-gradient(180deg, rgba(251, 191, 36, 0.22), rgba(251, 191, 36, 0.08));
+}
+
+[data-theme="light"] .setup-title {
+  color: #713f12;
+}
 </style>
