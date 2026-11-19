@@ -1,5 +1,6 @@
 -- 由 scripts/gen_test_cases.py 生成（seed=20261118），请勿手工修改
 -- 用途：重置 6 道示例题的隐藏测试点；公开样例不参与评分
+-- 与 docs/sql/schema.sql 中的测试点数据一致：每题 6 点，分值 17/17/17/17/16/16，合计 100
 USE `oj`;
 
 DELETE FROM `test_case`

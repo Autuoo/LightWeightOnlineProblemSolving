@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS `problem` (
   `tags`            VARCHAR(128)    NOT NULL DEFAULT ''     COMMENT '标签，逗号分隔，如 数组,字符串',
   `time_limit_ms`   INT             NOT NULL DEFAULT 1000   COMMENT '基准时间限制',
   `memory_limit_mb` INT             NOT NULL DEFAULT 256    COMMENT '内存限制',
-  `visible`         TINYINT         NOT NULL DEFAULT 1      COMMENT '1 可见 0 隐藏（软删除）',
+  `visible`         TINYINT         NOT NULL DEFAULT 1      COMMENT '1 可见 0 隐藏',
   `created_by`      BIGINT UNSIGNED NOT NULL                COMMENT '创建者 user.id',
   `created_at`      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   `updated_at`      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),

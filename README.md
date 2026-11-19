@@ -11,15 +11,18 @@
 
 | 模块 | 说明 |
 |---|---|
-| 认证 | JWT 无状态登录，角色分为 `STUDENT` / `ADMIN` |
-| 题库 | 6 道示例题（难度 1–2，每题 6 个隐藏测试点）；管理员可增删改与设置可见性 |
-| 用户管理 | 管理员查看账号列表、启用/禁用、重置密码；禁用后已登录会话立即失效 |
+| 认证 | 登录/退出、学生自助注册、JWT 无状态会话，角色分为 `STUDENT` / `ADMIN` |
+| 题库 | 6 道示例题（难度 1–2，每题 6 个隐藏测试点）；关键词/难度筛选；管理员可增删改、设置可见性并导入测试点 |
+| 用户管理 | 管理员查看账号列表、创建账号、启用/禁用、重置密码；禁用后已登录会话立即失效 |
 | 个人中心 | 修改昵称/密码、上传头像；7/30 天刷题趋势、难度与方向分布、每日记录；分页刷题记录 |
 | 判题 | 提交后异步判题，编译 + 逐测试点执行，支持 Python 3 / C++ 17 / Java 17 |
-| 实时反馈 | WebSocket（STOMP）推送提交状态变化，无需手动刷新 |
+| 实时反馈 | WebSocket（STOMP）推送提交状态变化；连接不可用时自动降级为轮询 |
 | 提交记录 | 历史列表、单次提交的每个测试点耗时与结论（AC / WA / TLE / MLE / RE / CE） |
-| 排行榜 | 按通过题数、罚时统计 |
-| AI 助教 | 失败后调用 Agent，通过受控工具读取脱敏信息，分步给出思路提示（可一键关闭） |
+| 运行自测 | 学生用自定义 stdin 运行当前代码，不读取隐藏测试点、不产生提交记录 |
+| 历史代码 | 做题页可查看本题历史提交并一键载入代码 |
+| 排行榜 | 按通过题数降序、提交次数升序排名，展示提交数与通过率 |
+| AI 助教 | 用户自配模型端点与 API Key；未配置时禁用入口；针对当前题目/失败提交给出分级思路提示 |
+| 界面 | 深/浅色主题切换、题目与代码分栏布局、关键状态醒目提示 |
 
 ## 技术栈
 
@@ -28,7 +31,7 @@
 | 前端 | Vue 3.5 + Vue Router + Pinia + Vite 5 + Monaco Editor + Markdown-It |
 | 后端 | Spring Boot 3.3（Web / Security / Validation / Actuator）+ MyBatis-Plus 3.5 |
 | 鉴权 | Spring Security + JJWT 0.12 |
-| 数据库 | MySQL 8.0（InnoDB / utf8mb4），6 张表 |
+| 数据库 | MySQL 8.0（InnoDB / utf8mb4），7 张表 |
 | 接口文档 | SpringDoc OpenAPI 2.5（Swagger UI） |
 | 测试 | JUnit 5 + JaCoCo |
 
@@ -45,13 +48,13 @@ backend/                Spring Boot 后端
   ├─ websocket/         结果推送
   └─ mapper/            MyBatis-Plus Mapper
 frontend/               Vue 3 前端（Vite）
-docs/                   接口契约、详细设计说明书、数据库脚本
+docs/                   需求与用例、团队规范、接口契约、详细设计、数据库脚本、题库素材
 scripts/                数据库初始化、端到端冒烟测试脚本
 ```
 
 ## 快速开始
 
-**前置环境**：JDK 17、Maven 3.9+、Node 18+、pnpm、MySQL 8.0（字符集 utf8mb4）。
+**前置环境**：JDK 17、Maven 3.9+、Node 18+、npm（或 pnpm）、MySQL 8.0（字符集 utf8mb4）。
 
 ### 1. 初始化数据库
 
@@ -65,7 +68,7 @@ Windows 也可以使用脚本：
 powershell -ExecutionPolicy Bypass -File scripts/init-db.ps1 -Password 你的MySQL密码
 ```
 
-脚本会创建 `oj` 库、6 张表，并写入 6 道示例题共 36 个隐藏测试点（每题 6 个，公开样例不参与评分）：A+B、数列求和、求最大值、回文串判断、斐波那契数列、排序去重。脚本使用 `INSERT ... WHERE NOT EXISTS`，可重复执行而不会产生重复数据。测试点由 `scripts/gen_test_cases.py` 以固定种子生成，重跑结果一致。
+脚本会创建 `oj` 库、7 张表，并写入 6 道示例题共 36 个隐藏测试点（每题 6 个，公开样例不参与评分）：A+B、数列求和、求最大值、回文串判断、斐波那契数列、排序去重。脚本使用 `INSERT ... WHERE NOT EXISTS`，可重复执行而不会产生重复数据。测试点由 `scripts/gen_test_cases.py` 以固定种子生成，重跑结果一致。
 
 ### 2. 启动后端
 
@@ -97,8 +100,8 @@ mvn -f backend/pom.xml spring-boot:run
 ### 3. 启动前端
 
 ```bash
-pnpm -C frontend install
-pnpm -C frontend dev
+npm --prefix frontend install
+npm --prefix frontend run dev
 ```
 
 访问 http://localhost:5173 。前端在 `frontend/src/api/config.js` 中直连 `http://<当前主机>:8081`，不经过 Vite 代理；后端地址变化时，用 `VITE_API_BASE` / `VITE_WS_BASE` 覆盖即可。
@@ -107,10 +110,12 @@ pnpm -C frontend dev
 
 | 账号 | 密码 | 说明 |
 |---|---|---|
-| `admin` | 启动时设置的 `OJ_ADMIN_PASSWORD` | 管理员 |
-| `stu001` | — | 库中为占位哈希，无法直接登录；由管理员在「用户管理」中重置密码 |
+| `admin` | `Admin@123` | 管理员（`schema.sql` 内置演示哈希，生产必须修改） |
+| `stu001` | 以实际环境为准 | 示例学生；忘记密码可由管理员在「用户管理」重置 |
 
-> 若启动时未设置 `OJ_ADMIN_PASSWORD`，`admin` 无法登录（库中只有占位哈希）。
+> 新用户可在登录页点击「立即注册」自助创建学生账号，注册成功后自动登录。
+>
+> 若启动时设置了 `OJ_ADMIN_PASSWORD`，后端会把 `admin` 密码重置为该值，便于本机调试。
 
 管理员登录后可在侧边栏「用户管理」中：
 
@@ -199,12 +204,22 @@ powershell -ExecutionPolicy Bypass -File scripts/e2e-test.ps1 -BaseUrl http://12
 
 ## 文档
 
+- [用例分析与优先级](docs/requirements/use-case-analysis.md) — 建模过程、行为者、用例清单、MoSCoW/RICE、迭代计划
+- [用例详细规格](docs/requirements/use-case-specs.md) — 核心用例的主场景、扩展场景与验收标准
+- [用例图](docs/requirements/use-case-diagram.puml) — PlantUML 源文件
+- [需求规划清单](docs/requirements/backlog.csv) — 可录入 CodeArts 的 Epic/Feature/Story/Task
+- [团队章程](docs/team/team-charter.md) / [AI 使用声明](docs/team/ai-usage-statement.md) / [代码规范](docs/team/code-style.md)
+- [CodeArts 配置指引](docs/team/codearts-setup.md) — 成员添加与需求规划操作步骤
 - [接口契约](docs/接口契约.md) — 前后端并行开发的唯一依据
 - [详细设计说明书](docs/详细设计说明书.md) — 模块划分、状态机、异常与测试切入点
 - [数据库脚本](docs/sql/schema.sql) — 建库建表与初始数据
+- [候选题库数据包](docs/problems/problem-pack.json) — 7 道题面与测试点素材（当前演示库为 6 道原有题目；题目包中「二进制表示」曾创建后删除，其余 6 道尚未导入）
 
 ## 已知限制
 
 - 仅支持 3 种语言，未实现 Special Judge 与浮点误差比对。
+- C++17 依赖本机 `g++`；未安装 MinGW 时 C++ 提交与运行自测会返回 RE，Python/Java 不受影响。
 - 单机部署，无分布式调度与多节点扩展。
 - 进程沙箱仅做超时控制与工作目录隔离，未限制内存与网络，适合课程与内网场景，不建议直接暴露到公网。
+- 「运行自测」不参与评分、不产生提交记录，仅用于学生用自己的输入调试。
+- 删除题目会连同该题测试点、逐点结果、AI 记录与提交记录一并删除，操作不可恢复，管理端需二次确认。

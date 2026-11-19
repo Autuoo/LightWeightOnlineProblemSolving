@@ -1,5 +1,5 @@
 {
-  "note": "samples 可直接用于题目接口；sampleLines 用于题目管理页的样例输入框；testCases 用于测试点 JSON 导入框",
+  "note": "samples 可直接用于题目接口；sampleLines 用于题目管理页的样例输入框；testCases 用于测试点 JSON 导入框。当前演示库题库为 6 道原有题目；本数据包 7 道为候选题，其中「二进制表示」曾创建后删除，其余 6 道尚未导入。",
   "problems": [
     {
       "title": "二进制表示",

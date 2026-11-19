@@ -48,7 +48,7 @@
 | 非功能需求 | 注册接口 1 秒内返回；密码与 token 不写入日志；表单错误提示需可见。 |
 | 数据与接口约束 | `POST /api/auth/register`，请求含 username、nickname、password；成功返回 token、expiresIn、user。 |
 | 优先级 | Must；RICE 估算见分析文档 6.2 |
-| 迭代 / 负责人 | Sprint 2 / 成员 B（待确认） |
+| 迭代 / 负责人 | Sprint 2 / 涂春晖 |
 | 验收标准 | AC-01-1 Given 合法用户名与密码，When 提交注册，Then 账号创建成功并自动登录进入题库。<br>AC-01-2 Given 已存在的用户名，When 提交注册，Then 返回 400 且提示「用户名已被注册」。<br>AC-01-3 Given 两次密码不一致，When 提交，Then 前端拦截并提示，不发送请求。 |
 
 ## UC-02 登录与退出
@@ -70,7 +70,7 @@
 | 非功能需求 | 登录接口 1 秒内返回；连续失败不泄露账号是否存在；退出后浏览器返回不能恢复受限页面。 |
 | 数据与接口约束 | `POST /api/auth/login`；`GET /api/auth/me` 用于恢复会话；Authorization: Bearer。 |
 | 优先级 | Must |
-| 迭代 / 负责人 | Sprint 2 / 成员 B（待确认） |
+| 迭代 / 负责人 | Sprint 2 / 涂春晖 |
 | 验收标准 | AC-02-1 Given 正确账号密码，When 登录，Then 进入系统且菜单按角色显示。<br>AC-02-2 Given 错误密码，When 登录，Then 返回统一错误提示且不泄露账号是否存在。<br>AC-02-3 Given 学生已登录，When 直接访问 `/api/admin/**`，Then 返回 403。<br>AC-02-4 Given 已登录，When 点击退出，Then 本地登录态清空并回到登录页。 |
 
 ## UC-05 编写并提交代码
@@ -92,7 +92,7 @@
 | 非功能需求 | 提交接口 1 秒内返回 submissionId；单测试点执行不超过题目时限；评测异步执行不阻塞请求线程。 |
 | 数据与接口约束 | `POST /api/submissions`，请求含 problemId、language、code；响应含 submissionId、status、reused。 |
 | 优先级 | Must |
-| 迭代 / 负责人 | Sprint 2–3 / 成员 C、成员 D（待确认） |
+| 迭代 / 负责人 | Sprint 2–3 / 钱嘉鑫、涂春晖 |
 | 验收标准 | AC-05-1 Given 合法代码与可见题目，When 提交，Then 返回 submissionId 且状态为 PENDING。<br>AC-05-2 Given 不支持的编程语言，When 提交，Then 返回 40002 且不创建记录。<br>AC-05-3 Given 相同代码连续提交两次，When 第二次提交，Then 复用最近结果（reused=true）。<br>AC-05-4 Given 题目无测试点，When 提交，Then 结果为 RE 且错误信息明确提示未配置测试点。<br>AC-05-5 Given 评测完成，When 查询提交详情，Then 状态为 AC/WA/TLE/RE/CE 之一并带逐点结果。 |
 
 ## UC-06 查看评测结果与提交详情
@@ -114,7 +114,7 @@
 | 非功能需求 | 详情接口 1 秒内返回；页面在 1440×900 下结果表完整可见；实时更新失败不影响基本信息展示。 |
 | 数据与接口约束 | `GET /api/submissions/{id}`；逐点结果来自 `submission_case_result`，序号由测试点映射。 |
 | 优先级 | Must |
-| 迭代 / 负责人 | Sprint 3 / 成员 C、成员 E（待确认） |
+| 迭代 / 负责人 | Sprint 3 / 钱嘉鑫、陈益诚 |
 | 验收标准 | AC-06-1 Given 本人提交，When 打开详情，Then 展示状态、分数、逐点结果且无测试点内容。<br>AC-06-2 Given 查看他人提交且非管理员，When 请求详情，Then 返回 403。<br>AC-06-3 Given 提交从 PENDING 变为终态，When 页面保持打开，Then 自动刷新为终态结果。 |
 
 ## UC-07 自定义输入运行
@@ -136,7 +136,7 @@
 | 非功能需求 | 同步运行请求超时上限 40 秒；界面明确提示「不产生提交记录」；结果区可滚动、等宽字体。 |
 | 数据与接口约束 | `POST /api/submissions/custom-run`，请求含 problemId、language、code、input；响应含 status、exitCode、timeMs、stdout、stderr、compileOutput。 |
 | 优先级 | Should |
-| 迭代 / 负责人 | Sprint 4 / 成员 C、成员 E（待确认） |
+| 迭代 / 负责人 | Sprint 4 / 钱嘉鑫、陈益诚 |
 | 验收标准 | AC-07-1 Given 代码 `print(int(input())*2)` 和输入 `21`，When 运行，Then 展示 `42` 且状态为 OK。<br>AC-07-2 Given 语法错误代码，When 运行，Then 状态为 CE 并展示编译输出。<br>AC-07-3 Given 死循环代码，When 运行，Then 状态为 TLE 且耗时接近题目时限。<br>AC-07-4 Given 任意自定义运行，When 运行前后查看提交记录，Then 提交总数不变。 |
 
 ## UC-11 配置 AI 助教并提问
@@ -158,7 +158,7 @@
 | 非功能需求 | 调用超时 30 秒内返回或明确超时；外部服务不可用时不影响刷题主链路；密钥安全存储。 |
 | 数据与接口约束 | 用户级配置表 `user_ai_config`；AI 调用记录表 `ai_hint`；提示接口按提交/题目维度调用。 |
 | 优先级 | Should（依赖外部服务，不作为验收必过项） |
-| 迭代 / 负责人 | Sprint 4 / 成员 C、成员 E（待确认） |
+| 迭代 / 负责人 | Sprint 4 / 万天行、陈益诚 |
 | 验收标准 | AC-11-1 Given 未配置 API Key，When 打开 AI 面板，Then 展示禁用原因与配置入口。<br>AC-11-2 Given 已配置有效 Key，When 针对当前题目提问，Then 返回与分析相关的提示。<br>AC-11-3 Given Key 无效，When 提问，Then 提示配置错误且不影响提交与自测。<br>AC-11-4 Given 任意提问，When 查看页面源码/日志，Then 不出现明文 API Key。 |
 
 ## UC-12 题目管理
@@ -180,7 +180,7 @@
 | 非功能需求 | 列表分页加载；导入 100 条以内测试点在 2 秒内完成；删除操作在事务中完成，失败回滚。 |
 | 数据与接口约束 | `GET/POST/PUT/DELETE /api/admin/problems`；`POST /api/admin/problems/{id}/test-cases`；表 `problem`、`test_case`。 |
 | 优先级 | Must |
-| 迭代 / 负责人 | Sprint 3 / 成员 D、成员 F（待确认） |
+| 迭代 / 负责人 | Sprint 3 / 涂春晖、余佩奇 |
 | 验收标准 | AC-12-1 Given 管理员填写完整题目信息，When 保存，Then 题目创建成功并出现在列表。<br>AC-12-2 Given 合法测试点 JSON，When 导入，Then 测试点数量更新且可被评测使用。<br>AC-12-3 Given 已有提交的题目，When 确认删除，Then 题目、测试点与关联提交一并删除。<br>AC-12-4 Given 学生访问管理接口，When 请求题目管理，Then 返回 403。 |
 
 ## 13. 其余用例概要规格
@@ -190,7 +190,7 @@
 | UC-03 浏览与检索题目 | 学生 | 已登录 | 打开题库 → 输入关键词/选择难度 → 分页查看题目、通过率、状态 | 只展示 visible=1；通过率按提交统计 | Must | AC-03-1 筛选条件生效；AC-03-2 不可见题目不出现 |
 | UC-04 查看题目详情与样例 | 学生 | 已登录 | 从题库进入题目 → 查看题面、输入输出格式、样例、时限/内存 | 渲染前做 XSS 清洗；样例与题面一致 | Must | AC-04-1 题面与样例完整显示；AC-04-2 不存在题目显示空状态 |
 | UC-08 加载历史提交代码 | 学生 | 已登录且有本题提交 | 打开历史代码面板 → 选择记录 → 代码载入编辑器并切换语言 | 只显示本人提交；载入前提示会覆盖当前代码 | Could | AC-08-1 列表按时间倒序；AC-08-2 载入后语言与代码正确 |
-| UC-09 查看排行榜 | 学生 | 已登录 | 打开排行榜 → 查看通过题数、通过率、排名 | 以 AC 题目数为主排序，同分按提交时间 | Should | AC-09-1 排名与统计一致；AC-09-2 空数据有提示 |
+| UC-09 查看排行榜 | 学生 | 已登录 | 打开排行榜 → 查看通过题数、提交数、通过率、排名 | 以 AC 题目数降序排序，同题数按提交次数升序（提交更少者靠前） | Should | AC-09-1 排名与统计一致；AC-09-2 空数据有提示 |
 | UC-10 个人中心与刷题统计 | 学生 | 已登录 | 编辑个人信息/头像 → 修改密码 → 查看今日、7 天、30 天统计与刷题记录 → 按条件筛选 | 只能查看本人数据；密码修改需校验旧密码 | Should | AC-10-1 统计区间切换正确；AC-10-2 记录筛选生效；AC-10-3 修改密码后旧密码失效 |
 | UC-13 用户管理 | 管理员 | 已登录且 ADMIN | 查看用户列表 → 创建用户 → 启用/禁用 → 重置密码 | 不能禁用/删除自身；重置后默认密码需告知用户 | Must | AC-13-1 创建用户可登录；AC-13-2 禁用后无法登录；AC-13-3 重置密码生效 |
 | UC-14 切换主题 | 学生/管理员 | 已登录或登录页 | 点击主题按钮 → 切换深浅色 → 刷新后保持 | 主题持久化到本地；图表与代码编辑器同步 | Could | AC-14-1 刷新后主题不变；AC-14-2 关键文字对比度可读 |
