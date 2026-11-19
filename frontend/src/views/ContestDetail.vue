@@ -35,6 +35,13 @@
 
       <div class="toolbar rise" style="animation-delay: 40ms">
         <RouterLink class="btn btn-primary" :to="`/contests/${contest.id}/standings`">查看榜单</RouterLink>
+        <RouterLink
+          v-if="contest.registered"
+          class="btn btn-ghost"
+          :to="`/submissions?contestId=${contest.id}`"
+        >
+          我的比赛提交
+        </RouterLink>
         <span v-if="contest.phase === 'UPCOMING'" class="hint">比赛开始后题目才会公开，可先报名</span>
         <span v-else-if="contest.phase === 'FROZEN'" class="hint">已封榜，公开榜单不再显示封榜后的提交</span>
       </div>

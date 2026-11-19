@@ -3,7 +3,13 @@
     <header class="head rise">
       <div>
         <h1>提交记录</h1>
-        <p class="sub">{{ auth.isAdmin ? '全部学生提交，可按标记筛选' : '我的全部评测历史' }}</p>
+        <p class="sub">
+          <template v-if="contestId">
+            比赛 #{{ contestId }} 的提交
+            <button class="link" @click="clearContest">查看全部提交</button>
+          </template>
+          <template v-else>{{ auth.isAdmin ? '全部学生提交，可按标记筛选' : '我的全部评测历史' }}</template>
+        </p>
       </div>
       <div class="filters">
         <select v-model="status" class="input select" @change="search">
@@ -86,12 +92,13 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import StatusBadge from '../components/StatusBadge.vue'
 import { adminApi, submissionApi } from '../api'
 import { useAuthStore } from '../stores/auth'
 
+const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
@@ -102,6 +109,7 @@ const size = ref(20)
 const status = ref('')
 const suspicious = ref('')
 const loading = ref(true)
+const contestId = computed(() => (route.query.contestId ? Number(route.query.contestId) : null))
 
 function formatTime(value) {
   if (!value) return '—'
@@ -120,6 +128,9 @@ async function fetchList() {
     }
     if (auth.isAdmin && suspicious.value !== '') {
       params.suspicious = suspicious.value === '1'
+    }
+    if (!auth.isAdmin && contestId.value) {
+      params.contestId = contestId.value
     }
     const data = auth.isAdmin
       ? await adminApi.listSubmissions(params)
@@ -147,6 +158,15 @@ function go(next) {
 function open(id) {
   router.push({ name: 'submission-detail', params: { id } })
 }
+
+function clearContest() {
+  router.push({ name: 'submissions' })
+}
+
+watch(() => route.query.contestId, () => {
+  page.value = 1
+  fetchList()
+})
 
 onMounted(fetchList)
 </script>
@@ -176,6 +196,22 @@ h1 {
   margin: 0;
   color: var(--text-faint);
   font-size: 12.5px;
+}
+
+.link {
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.link:hover {
+  color: var(--text);
 }
 
 .select {
