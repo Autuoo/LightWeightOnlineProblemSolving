@@ -11,6 +11,7 @@ import com.example.oj.dto.SubmissionDetail;
 import com.example.oj.dto.SubmissionListItem;
 import com.example.oj.dto.SubmitRequest;
 import com.example.oj.dto.SubmitResponse;
+import com.example.oj.entity.Contest;
 import com.example.oj.entity.Problem;
 import com.example.oj.entity.Submission;
 import com.example.oj.entity.SubmissionCaseResult;
@@ -18,6 +19,9 @@ import com.example.oj.entity.TestCase;
 import com.example.oj.judge.JudgeDispatcher;
 import com.example.oj.judge.JudgeTask;
 import com.example.oj.judge.SuspiciousCodeDetector;
+import com.example.oj.mapper.ContestMapper;
+import com.example.oj.mapper.ContestParticipantMapper;
+import com.example.oj.mapper.ContestProblemMapper;
 import com.example.oj.mapper.ProblemMapper;
 import com.example.oj.mapper.SubmissionCaseResultMapper;
 import com.example.oj.mapper.SubmissionMapper;
@@ -42,6 +46,9 @@ public class SubmissionService {
     private final ProblemMapper problemMapper;
     private final TestCaseMapper testCaseMapper;
     private final SubmissionCaseResultMapper caseResultMapper;
+    private final ContestMapper contestMapper;
+    private final ContestProblemMapper contestProblemMapper;
+    private final ContestParticipantMapper contestParticipantMapper;
     private final ProblemService problemService;
     private final JudgeDispatcher judgeDispatcher;
     private final JudgeProperties judgeProperties;
@@ -51,6 +58,9 @@ public class SubmissionService {
                              ProblemMapper problemMapper,
                              TestCaseMapper testCaseMapper,
                              SubmissionCaseResultMapper caseResultMapper,
+                             ContestMapper contestMapper,
+                             ContestProblemMapper contestProblemMapper,
+                             ContestParticipantMapper contestParticipantMapper,
                              ProblemService problemService,
                              JudgeDispatcher judgeDispatcher,
                              JudgeProperties judgeProperties,
@@ -59,6 +69,9 @@ public class SubmissionService {
         this.problemMapper = problemMapper;
         this.testCaseMapper = testCaseMapper;
         this.caseResultMapper = caseResultMapper;
+        this.contestMapper = contestMapper;
+        this.contestProblemMapper = contestProblemMapper;
+        this.contestParticipantMapper = contestParticipantMapper;
         this.problemService = problemService;
         this.judgeDispatcher = judgeDispatcher;
         this.judgeProperties = judgeProperties;
@@ -69,17 +82,53 @@ public class SubmissionService {
         if (!LANGUAGES.contains(request.language())) {
             throw new BusinessException(ErrorCode.UNSUPPORTED_LANGUAGE);
         }
-        Problem problem = problemService.requireVisible(request.problemId());
+
+        Long contestId = request.contestId();
+        Problem problem;
+        if (contestId != null) {
+            Contest contest = contestMapper.selectById(contestId);
+            if (contest == null || contest.getPublished() == null || contest.getPublished() == 0) {
+                throw new BusinessException(ErrorCode.NOT_FOUND, "比赛不存在或未发布");
+            }
+            LocalDateTime now = LocalDateTime.now();
+            if (now.isBefore(contest.getStartAt()) || !now.isBefore(contest.getEndAt())) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "比赛未开始或已结束");
+            }
+            long registered = contestParticipantMapper.selectCount(
+                    new LambdaQueryWrapper<com.example.oj.entity.ContestParticipant>()
+                            .eq(com.example.oj.entity.ContestParticipant::getContestId, contestId)
+                            .eq(com.example.oj.entity.ContestParticipant::getUserId, userId));
+            if (registered == 0) {
+                throw new BusinessException(ErrorCode.FORBIDDEN, "请先报名比赛");
+            }
+            long mapped = contestProblemMapper.selectCount(
+                    new LambdaQueryWrapper<com.example.oj.entity.ContestProblem>()
+                            .eq(com.example.oj.entity.ContestProblem::getContestId, contestId)
+                            .eq(com.example.oj.entity.ContestProblem::getProblemId, request.problemId()));
+            if (mapped == 0) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "题目不属于该比赛");
+            }
+            problem = problemMapper.selectById(request.problemId());
+            if (problem == null) {
+                throw new BusinessException(ErrorCode.NOT_FOUND, "题目不存在");
+            }
+        } else {
+            problem = problemService.requireVisible(request.problemId());
+        }
 
         String codeHash = HashUtils.sha256(request.language() + "\n" + request.code());
-        Submission existing = findIdempotent(userId, request.problemId(), codeHash);
-        if (existing != null) {
-            return new SubmitResponse(existing.getId(), existing.getStatus(), true);
+        // 比赛提交不复用幂等结果，保证每次尝试都被记录并计入罚时。
+        if (contestId == null) {
+            Submission existing = findIdempotent(userId, request.problemId(), codeHash);
+            if (existing != null) {
+                return new SubmitResponse(existing.getId(), existing.getStatus(), true);
+            }
         }
 
         Submission submission = new Submission();
         submission.setUserId(userId);
         submission.setProblemId(problem.getId());
+        submission.setContestId(contestId);
         submission.setLanguage(request.language());
         submission.setCode(request.code());
         submission.setCodeHash(codeHash);
@@ -138,6 +187,7 @@ public class SubmissionService {
         return new SubmissionDetail(
                 submission.getId(),
                 submission.getProblemId(),
+                submission.getContestId(),
                 problemTitle,
                 submission.getLanguage(),
                 submission.getCode(),
@@ -156,13 +206,14 @@ public class SubmissionService {
     }
 
     public PageResponse<SubmissionListItem> list(Long userId, int pageNo, int size, Long problemId,
-                                                 String status, String keyword,
+                                                 Long contestId, String status, String keyword,
                                                  LocalDateTime from, LocalDateTime to,
                                                  Boolean suspicious) {
         Page<Submission> page = new Page<>(pageNo, Math.min(size, 100));
         LambdaQueryWrapper<Submission> wrapper = new LambdaQueryWrapper<Submission>()
                 .eq(Submission::getUserId, userId)
                 .eq(problemId != null, Submission::getProblemId, problemId)
+                .eq(contestId != null, Submission::getContestId, contestId)
                 .eq(status != null && !status.isBlank(), Submission::getStatus, status)
                 .eq(suspicious != null, Submission::getSuspicious, Boolean.TRUE.equals(suspicious) ? 1 : 0)
                 .ge(from != null, Submission::getCreatedAt, from)

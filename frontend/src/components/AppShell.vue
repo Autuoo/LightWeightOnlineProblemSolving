@@ -14,6 +14,12 @@
           <svg viewBox="0 0 24 24" class="ico"><path d="M4 6h16M4 12h10M4 18h13" /></svg>
           <span>题库</span>
         </RouterLink>
+        <RouterLink to="/contests" class="nav-item">
+          <svg viewBox="0 0 24 24" class="ico">
+            <path d="M8 4h8v4a4 4 0 0 1-8 0V4M6 4H4v2a4 4 0 0 0 4 4M18 4h2v2a4 4 0 0 1-4 4M12 12v4M8 20h8M9 16h6" />
+          </svg>
+          <span>比赛</span>
+        </RouterLink>
         <RouterLink to="/leaderboard" class="nav-item">
           <svg viewBox="0 0 24 24" class="ico"><path d="M8 20V10M12 20V4M16 20v-7" /></svg>
           <span>排行榜</span>
@@ -30,6 +36,12 @@
             <circle cx="16" cy="18" r="2" />
           </svg>
           <span>个人设置</span>
+        </RouterLink>
+        <RouterLink v-if="auth.isAdmin" to="/admin/contests" class="nav-item">
+          <svg viewBox="0 0 24 24" class="ico">
+            <path d="M8 4h8v4a4 4 0 0 1-8 0V4M6 4H4v2a4 4 0 0 0 4 4M18 4h2v2a4 4 0 0 1-4 4M12 12v4M8 20h8M9 16h6" />
+          </svg>
+          <span>比赛管理</span>
         </RouterLink>
         <RouterLink v-if="auth.isAdmin" to="/admin/problems" class="nav-item">
           <svg viewBox="0 0 24 24" class="ico"><path d="M12 3l8 4v6c0 4-3.4 7.2-8 8-4.6-.8-8-4-8-8V7z" /></svg>

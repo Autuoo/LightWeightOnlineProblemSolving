@@ -7,9 +7,11 @@ import com.example.oj.common.ErrorCode;
 import com.example.oj.common.Result;
 import com.example.oj.config.AiProperties;
 import com.example.oj.dto.HintRequest;
+import com.example.oj.entity.Contest;
 import com.example.oj.entity.AiHint;
 import com.example.oj.entity.Submission;
 import com.example.oj.mapper.AiHintMapper;
+import com.example.oj.mapper.ContestMapper;
 import com.example.oj.mapper.SubmissionMapper;
 import com.example.oj.service.UserAiConfigService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,6 +48,7 @@ public class AiHintController {
 
     private final AiProperties aiProperties;
     private final SubmissionMapper submissionMapper;
+    private final ContestMapper contestMapper;
     private final AiHintMapper aiHintMapper;
     private final HintQuotaService quotaService;
     private final AgentOrchestrator orchestrator;
@@ -55,6 +58,7 @@ public class AiHintController {
 
     public AiHintController(AiProperties aiProperties,
                             SubmissionMapper submissionMapper,
+                            ContestMapper contestMapper,
                             AiHintMapper aiHintMapper,
                             HintQuotaService quotaService,
                             AgentOrchestrator orchestrator,
@@ -63,6 +67,7 @@ public class AiHintController {
                             @Qualifier("aiExecutor") ExecutorService aiExecutor) {
         this.aiProperties = aiProperties;
         this.submissionMapper = submissionMapper;
+        this.contestMapper = contestMapper;
         this.aiHintMapper = aiHintMapper;
         this.quotaService = quotaService;
         this.orchestrator = orchestrator;
@@ -81,6 +86,12 @@ public class AiHintController {
 
         Long userId = (Long) authentication.getPrincipal();
         Submission submission = requireOwnedSubmission(id, userId);
+        if (submission.getContestId() != null) {
+            Contest contest = contestMapper.selectById(submission.getContestId());
+            if (contest != null && !java.time.LocalDateTime.now().isAfter(contest.getEndAt())) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "比赛期间暂不使用 AI 助教，请赛后复盘");
+            }
+        }
         if (!TERMINAL_STATUSES.contains(submission.getStatus())) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "提交尚未评测完成");
         }

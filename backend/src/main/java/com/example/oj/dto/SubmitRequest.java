@@ -8,6 +8,8 @@ public record SubmitRequest(
         @NotNull(message = "题目 ID 不能为空")
         Long problemId,
 
+        Long contestId,
+
         @NotBlank(message = "语言不能为空")
         String language,
 

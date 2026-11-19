@@ -73,11 +73,14 @@
           </div>
 
           <HintPanel
-            v-if="detail.owner"
+            v-if="detail.owner && !detail.contestId"
             :submission-id="detail.id"
             :enabled="finished"
             :status="detail.status"
           />
+          <div v-else-if="detail.contestId" class="hint-owner-note">
+            比赛提交不提供 AI 助教；赛后可复盘代码与逐点结果。
+          </div>
           <div v-else class="hint-owner-note">
             AI 助教仅对提交本人开放；管理员查看他人提交时不提供提示。
           </div>

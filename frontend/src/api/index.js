@@ -22,6 +22,25 @@ export const leaderboardApi = {
   list: (limit = 20) => http.get('/leaderboard', { params: { limit } })
 }
 
+export const contestApi = {
+  list: (params) => http.get('/contests', { params }),
+  detail: (id) => http.get(`/contests/${id}`),
+  register: (id, payload) => http.post(`/contests/${id}/register`, payload || {}),
+  problem: (contestId, problemId) => http.get(`/contests/${contestId}/problems/${problemId}`),
+  standings: (id) => http.get(`/contests/${id}/standings`)
+}
+
+export const adminContestApi = {
+  list: (params) => http.get('/admin/contests', { params }),
+  detail: (id) => http.get(`/admin/contests/${id}`),
+  create: (payload) => http.post('/admin/contests', payload),
+  update: (id, payload) => http.put(`/admin/contests/${id}`, payload),
+  remove: (id) => http.delete(`/admin/contests/${id}`),
+  assignProblems: (id, payload) => http.put(`/admin/contests/${id}/problems`, payload),
+  standings: (id) => http.get(`/admin/contests/${id}/standings`),
+  registerParticipant: (id, userId) => http.post(`/admin/contests/${id}/participants/${userId}`)
+}
+
 export const hintApi = {
   status: () => http.get('/ai/status'),
   history: (submissionId) => http.get(`/submissions/${submissionId}/hints`)

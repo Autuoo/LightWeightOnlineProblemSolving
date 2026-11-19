@@ -6,6 +6,7 @@ import java.util.List;
 public record SubmissionDetail(
         Long id,
         Long problemId,
+        Long contestId,
         String problemTitle,
         String language,
         String code,

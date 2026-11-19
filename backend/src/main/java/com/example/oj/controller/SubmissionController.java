@@ -58,6 +58,7 @@ public class SubmissionController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) Long problemId,
+            @RequestParam(required = false) Long contestId,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -67,7 +68,7 @@ public class SubmissionController {
         LocalDateTime fromTime = from == null ? null : from.atStartOfDay();
         LocalDateTime toTime = to == null ? null : to.plusDays(1).atStartOfDay();
         return Result.ok(submissionService.list(
-                (Long) authentication.getPrincipal(), page, size, problemId, status, keyword,
+                (Long) authentication.getPrincipal(), page, size, problemId, contestId, status, keyword,
                 fromTime, toTime, suspicious));
     }
 

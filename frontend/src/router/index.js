@@ -16,6 +16,10 @@ const routes = [
       { path: '', redirect: '/problems' },
       { path: 'problems', name: 'problems', component: () => import('../views/ProblemList.vue') },
       { path: 'problems/:id', name: 'problem-detail', component: () => import('../views/ProblemDetail.vue') },
+      { path: 'contests', name: 'contests', component: () => import('../views/ContestList.vue') },
+      { path: 'contests/:id', name: 'contest-detail', component: () => import('../views/ContestDetail.vue') },
+      { path: 'contests/:id/standings', name: 'contest-standings', component: () => import('../views/ContestStandings.vue') },
+      { path: 'contests/:contestId/problems/:id', name: 'contest-problem', component: () => import('../views/ProblemDetail.vue') },
       { path: 'leaderboard', name: 'leaderboard', component: () => import('../views/Leaderboard.vue') },
       { path: 'submissions', name: 'submissions', component: () => import('../views/SubmissionList.vue') },
       { path: 'submissions/:id', name: 'submission-detail', component: () => import('../views/SubmissionDetail.vue') },
@@ -30,6 +34,12 @@ const routes = [
         path: 'admin/users',
         name: 'admin-users',
         component: () => import('../views/AdminUsers.vue'),
+        meta: { admin: true }
+      },
+      {
+        path: 'admin/contests',
+        name: 'admin-contests',
+        component: () => import('../views/AdminContests.vue'),
         meta: { admin: true }
       }
     ]

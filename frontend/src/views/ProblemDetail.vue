@@ -1,5 +1,11 @@
 <template>
-  <div class="detail">
+  <div class="detail" :class="{ 'contest-mode': isContestMode }">
+    <div v-if="isContestMode && contest" class="contest-bar">
+      <RouterLink :to="`/contests/${contestId}`" class="contest-back">← {{ contest.title }}</RouterLink>
+      <span class="contest-phase" :class="`p-${contest.phase.toLowerCase()}`">{{ contestPhaseText }}</span>
+      <span v-if="contestLive" class="contest-timer mono">{{ contestCountdown }}</span>
+      <RouterLink class="contest-standings" :to="`/contests/${contestId}/standings`">榜单 →</RouterLink>
+    </div>
     <section class="brief">
       <div v-if="loading" class="brief-loading">
         <div class="skeleton" style="height: 28px; width: 40%" />
@@ -48,7 +54,7 @@
         </div>
         <div class="toolbar-right">
 
-          <div class="history-wrap">
+          <div v-if="!isContestMode" class="history-wrap">
             <button class="btn btn-ghost history-toggle" :class="{ open: historyOpen }" @click.stop="toggleHistory">
               历史代码
               <span v-if="historyTotal" class="history-count">{{ historyTotal }}</span>
@@ -194,14 +200,14 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
 import CodeEditor from '../components/CodeEditor.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import CaseResultTable from '../components/CaseResultTable.vue'
-import { problemApi, submissionApi } from '../api'
+import { contestApi, problemApi, submissionApi } from '../api'
 import { useSubmissionStore } from '../stores/submission'
 
 const route = useRoute()
@@ -226,7 +232,32 @@ const runInput = ref('')
 const runLoading = ref(false)
 const runError = ref('')
 const runResult = ref(null)
+const contest = ref(null)
+const contestNow = ref(Date.now())
 let noticeTimer = null
+let contestTimer = null
+
+const contestId = computed(() => (route.params.contestId ? Number(route.params.contestId) : null))
+const isContestMode = computed(() => contestId.value !== null)
+const contestLive = computed(() => contest.value && ['RUNNING', 'FROZEN'].includes(contest.value.phase))
+const contestPhaseText = computed(() => {
+  const phase = contest.value?.phase
+  return { UPCOMING: '即将开始', RUNNING: '进行中', FROZEN: '封榜中', ENDED: '已结束' }[phase] || ''
+})
+const contestCountdown = computed(() => {
+  const current = contest.value
+  if (!current) return ''
+  const target = new Date(current.phase === 'UPCOMING' ? current.startAt : current.endAt).getTime()
+  const diff = Math.max(0, target - contestNow.value)
+  const day = Math.floor(diff / 86400000)
+  const hour = Math.floor((diff % 86400000) / 3600000)
+  const minute = Math.floor((diff % 3600000) / 60000)
+  const second = Math.floor((diff % 60000) / 1000)
+  const parts = day > 0
+    ? `${day} 天 ${hour} 时 ${minute} 分`
+    : `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`
+  return `${current.phase === 'UPCOMING' ? '距离开始' : '距离结束'} ${parts}`
+})
 
 const TEMPLATES = {
   PYTHON3: `import sys
@@ -412,10 +443,27 @@ async function load() {
   runResult.value = null
   runError.value = ''
   runInput.value = ''
+  if (contestTimer) {
+    clearInterval(contestTimer)
+    contestTimer = null
+  }
   try {
-    problem.value = await problemApi.detail(route.params.id)
+    if (contestId.value) {
+      const [problemData, contestData] = await Promise.all([
+        contestApi.problem(contestId.value, route.params.id),
+        contestApi.detail(contestId.value)
+      ])
+      problem.value = problemData
+      contest.value = contestData
+      contestNow.value = Date.now()
+      contestTimer = setInterval(() => { contestNow.value = Date.now() }, 1000)
+    } else {
+      problem.value = await problemApi.detail(route.params.id)
+      contest.value = null
+    }
   } catch {
     problem.value = null
+    contest.value = null
   } finally {
     loading.value = false
   }
@@ -427,11 +475,15 @@ async function submit() {
   submitError.value = ''
   reused.value = false
   try {
-    const result = await submissionApi.submit({
+    const payload = {
       problemId: problem.value.id,
       language: language.value,
       code: code.value
-    })
+    }
+    if (contestId.value) {
+      payload.contestId = contestId.value
+    }
+    const result = await submissionApi.submit(payload)
     reused.value = result.reused
     await submissionStore.load(result.submissionId, { force: true })
   } catch (error) {
@@ -464,10 +516,13 @@ onMounted(() => {
   document.addEventListener('click', closeHistoryOnOutside)
 })
 
+watch(() => [route.params.contestId, route.params.id], () => load())
+
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   document.removeEventListener('click', closeHistoryOnOutside)
   if (noticeTimer) clearTimeout(noticeTimer)
+  if (contestTimer) clearInterval(contestTimer)
   submissionStore.stopRealtime()
 })
 </script>
@@ -480,6 +535,63 @@ onBeforeUnmount(() => {
   padding: 18px;
   flex: 1;
   min-height: 0;
+}
+
+.detail.contest-mode {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.contest-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border: 1px solid rgba(45, 212, 191, 0.28);
+  border-radius: 10px;
+  background: rgba(45, 212, 191, 0.08);
+  font-size: 12px;
+}
+
+.contest-back {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.contest-back:hover {
+  color: var(--accent);
+}
+
+.contest-phase {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--bg-elev-2);
+}
+
+.contest-phase.p-running {
+  color: #0d9488;
+  background: rgba(45, 212, 191, 0.16);
+}
+
+.contest-phase.p-frozen {
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.16);
+}
+
+.contest-timer {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.contest-standings {
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .brief {

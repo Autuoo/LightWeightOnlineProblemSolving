@@ -15,6 +15,7 @@ public class Submission {
     private Long id;
     private Long userId;
     private Long problemId;
+    private Long contestId;
     private String language;
     private String code;
     private String codeHash;

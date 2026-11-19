@@ -109,6 +109,19 @@ public class ProblemService {
         if (problem == null || problem.getVisible() == null || problem.getVisible() == 0) {
             throw new BusinessException(ErrorCode.NOT_FOUND);
         }
+        return buildDetail(problem);
+    }
+
+    /** 比赛题目可能对普通题库隐藏，由 contest_problem 单独授权，此处不校验 visible。 */
+    public ProblemDetail detailAny(Long problemId) {
+        Problem problem = problemMapper.selectById(problemId);
+        if (problem == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND);
+        }
+        return buildDetail(problem);
+    }
+
+    private ProblemDetail buildDetail(Problem problem) {
         return new ProblemDetail(
                 problem.getId(),
                 problem.getTitle(),
