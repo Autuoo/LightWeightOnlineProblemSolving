@@ -27,6 +27,8 @@ rectangle "轻量在线判题系统 OJ" {
   usecase "UC-13 用户管理" as UC13
   usecase "UC-13a 重置密码" as UC13a
   usecase "UC-14 切换主题" as UC14
+  usecase "UC-15 参加比赛" as UC15
+  usecase "UC-16 比赛管理" as UC16
 }
 
 Student --> UC01
@@ -46,6 +48,8 @@ Admin --> UC12
 Admin --> UC13
 Student --> UC14
 Admin --> UC14
+Student --> UC15
+Admin --> UC16
 
 UC01 .> UC02 : <<extend>>
 UC05 ..> UC06 : <<include>>
@@ -53,6 +57,7 @@ UC07 ..> UC05 : <<extend>>
 UC08 ..> UC05 : <<extend>>
 UC12 ..> UC12a : <<include>>
 UC13 ..> UC13a : <<include>>
+UC15 ..> UC05 : <<extend>>
 UC11 --> AI
 
 note right of UC07
