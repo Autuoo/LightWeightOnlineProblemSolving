@@ -138,8 +138,12 @@
               <span>比赛题目</span>
               <span class="mono">{{ selected.length }} 题 · 按勾选顺序编号 A/B/C</span>
             </div>
+            <div class="picker-search">
+              <input v-model.trim="problemKeyword" class="input" placeholder="搜索题目名称" />
+              <button v-if="problemKeyword" type="button" class="picker-clear" @click="problemKeyword = ''">清空</button>
+            </div>
             <div class="picker-list">
-              <label v-for="problem in problems" :key="problem.id" class="pick">
+              <label v-for="problem in filteredProblems" :key="problem.id" class="pick">
                 <input
                   type="checkbox"
                   :checked="selected.includes(problem.id)"
@@ -149,7 +153,9 @@
                 <span class="pick-title">{{ problem.title }}</span>
                 <span class="pick-meta mono">难度 {{ problem.difficulty }}</span>
               </label>
-              <div v-if="!problems.length" class="empty-sub">题库为空，先去题目管理创建题目</div>
+              <div v-if="!filteredProblems.length" class="empty-sub">
+                {{ problems.length ? '没有匹配的题目' : '题库为空，先去题目管理创建题目' }}
+              </div>
             </div>
           </div>
 
@@ -170,7 +176,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { adminApi, adminContestApi } from '../api'
 
@@ -180,6 +186,7 @@ const page = ref(1)
 const size = 20
 const total = ref(0)
 const keyword = ref('')
+const problemKeyword = ref('')
 const loading = ref(true)
 const saving = ref(false)
 const deletingId = ref(null)
@@ -199,6 +206,11 @@ const form = reactive({
   published: true
 })
 const selected = ref([])
+const filteredProblems = computed(() => {
+  const kw = problemKeyword.value.trim().toLowerCase()
+  if (!kw) return problems.value
+  return problems.value.filter((problem) => (problem.title || '').toLowerCase().includes(kw))
+})
 
 function phaseText(phase) {
   return { DRAFT: '草稿', UPCOMING: '即将开始', RUNNING: '进行中', FROZEN: '封榜中', ENDED: '已结束' }[phase] || phase
@@ -246,7 +258,7 @@ async function loadList() {
 
 async function loadProblems() {
   try {
-    const data = await adminApi.listProblems({ page: 1, size: 100 })
+    const data = await adminApi.listProblems({ page: 1, size: 200 })
     problems.value = data.records || []
   } catch {
     problems.value = []
@@ -650,6 +662,29 @@ h1 {
 .picker-head .mono {
   font-size: 10px;
   color: var(--text-faint);
+}
+
+.picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-sunken);
+}
+
+.picker-search .input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  font-size: 12px;
+}
+
+.picker-clear {
+  flex-shrink: 0;
+  padding: 0;
+  font-size: 11px;
+  color: var(--accent);
 }
 
 .picker-list {

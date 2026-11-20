@@ -115,7 +115,7 @@ function formatTime(value) {
   if (!value) return '—'
   const date = new Date(value)
   const pad = (n) => String(n).padStart(2, '0')
-  return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 async function fetchList() {
@@ -332,7 +332,7 @@ h1 {
 }
 
 .c-created {
-  width: 120px;
+  width: 150px;
   font-size: 11.5px;
   color: var(--text-faint);
 }

@@ -64,6 +64,7 @@
         </div>
       </div>
 
+
       <div class="table-head">
         <span>用户名</span>
         <span>昵称</span>
@@ -116,6 +117,17 @@
           <button class="btn btn-ghost op" :disabled="busy === user.id" @click="viewAiConfig(user)">
             AI 配置
           </button>
+          <RouterLink class="btn btn-ghost op" :to="`/admin/users/${user.id}`">
+            编辑
+          </RouterLink>
+          <button
+            class="btn btn-ghost op danger"
+            :disabled="busy === user.id || user.id === auth.user?.id"
+            :title="user.id === auth.user?.id ? '不能删除当前登录账号' : ''"
+            @click="removeUser(user)"
+          >
+            删除
+          </button>
         </span>
       </div>
 
@@ -138,6 +150,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import { adminUserApi } from '../api'
 import { useAuthStore } from '../stores/auth'
 
@@ -158,6 +171,7 @@ const creating = ref(false)
 const form = ref({ username: '', nickname: '', password: '' })
 const aiView = ref(null)
 
+
 function formatTime(value) {
   if (!value) return '—'
   const date = new Date(value)
@@ -171,7 +185,7 @@ function formatTime(value) {
 async function load(nextPage = page.value) {
   loading.value = true
   error.value = ''
-  notice.value = ''
+
   resetTarget.value = null
   try {
     const data = await adminUserApi.list({ page: nextPage, size, keyword: keyword.value })
@@ -246,6 +260,29 @@ async function createUser() {
     error.value = err.message || '创建失败'
   } finally {
     creating.value = false
+  }
+}
+
+
+async function removeUser(user) {
+  if (user.id === auth.user?.id) return
+  const confirmed = window.confirm(
+    `确定删除用户「${user.username}」吗？\n该用户的提交记录、比赛报名与 AI 配置会一并删除，且不可恢复。`
+  )
+  if (!confirmed) return
+  busy.value = user.id
+  error.value = ''
+  notice.value = ''
+  try {
+    await adminUserApi.remove(user.id)
+    notice.value = `已删除用户 ${user.username}`
+
+    if (aiView.value?.id === user.id) aiView.value = null
+    await load()
+  } catch (err) {
+    error.value = err.message || '删除失败'
+  } finally {
+    busy.value = null
   }
 }
 
@@ -338,7 +375,7 @@ h1 {
 
 .panel {
   padding: 0;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .create-row {
@@ -385,13 +422,24 @@ h1 {
   gap: 6px;
 }
 
+
+.danger {
+  color: var(--err);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.danger:hover {
+  background: rgba(239, 68, 68, 0.12);
+}
+
 .table-head,
 .table-row {
   display: grid;
-  grid-template-columns: 1.1fr 1fr 0.7fr 0.7fr 1.2fr 1.6fr;
+  grid-template-columns: 1fr 0.9fr 0.55fr 0.55fr 1fr 2.9fr;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 11px 18px;
+  min-width: 980px;
 }
 
 .table-head {
@@ -463,14 +511,16 @@ h1 {
 
 .ops {
   display: flex;
-  justify-content: flex-end;
-  gap: 6px;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 5px;
 }
 
 .op {
   height: 26px;
-  padding: 0 9px;
-  font-size: 11.5px;
+  padding: 0 7px;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .confirm {
@@ -500,7 +550,7 @@ h1 {
 }
 
 .right {
-  text-align: right;
+  text-align: left;
 }
 
 @media (max-width: 900px) {

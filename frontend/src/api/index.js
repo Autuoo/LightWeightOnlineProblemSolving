@@ -76,11 +76,16 @@ export const adminApi = {
 
 export const adminUserApi = {
   list: (params) => http.get('/admin/users', { params }),
+  detail: (id) => http.get(`/admin/users/${id}`),
   updateStatus: (id, status) => http.patch(`/admin/users/${id}/status`, { status }),
   resetPassword: (id) => http.post(`/admin/users/${id}/reset-password`),
   create: (payload) => http.post('/admin/users', payload),
   aiConfig: (id) => http.get(`/admin/users/${id}/ai-config`),
-  clearAiConfig: (id) => http.delete(`/admin/users/${id}/ai-config`)
+  clearAiConfig: (id) => http.delete(`/admin/users/${id}/ai-config`),
+  update: (id, payload) => http.patch(`/admin/users/${id}`, payload),
+  remove: (id) => http.delete(`/admin/users/${id}`),
+  uploadAvatar: (id, formData) => http.post(`/admin/users/${id}/avatar`, formData),
+  removeAvatar: (id) => http.delete(`/admin/users/${id}/avatar`)
 }
 
 export const TERMINAL_STATUSES = ['AC', 'WA', 'TLE', 'MLE', 'RE', 'CE', 'REJECTED']

@@ -59,9 +59,9 @@ onMounted(()=>{
   renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;host.value.appendChild(renderer.domElement)
   const resize=()=>{const w=host.value.clientWidth,h=host.value.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h)}
   observer=new ResizeObserver(resize);observer.observe(host.value);resize()
-  const reduce=matchMedia('(prefers-reduced-motion: reduce)'),start=performance.now()
+  const start=performance.now()
   const animate=now=>{
-    const t=reduce.matches?.04:((now-start)/19000)%1,travel=ease(.06,.80,t)
+    const t=((now-start)/19000)%1,travel=ease(.06,.80,t)
     const stage=t<.28?0:t<.46?1:t<.64?2:3
     if(stage!==lastStage){lastStage=stage;emit('stage',stage)}
     camera.position.set(Math.sin(travel*Math.PI*5)*1.5,.25+Math.sin(travel*Math.PI*3)*.4,11-travel*51)
@@ -81,5 +81,5 @@ onUnmounted(()=>{cancelAnimationFrame(frame);observer?.disconnect();scene.traver
 .growth-scene:before{background:radial-gradient(ellipse 38% 50% at 52% 51%,#0d94881c,transparent 80%)}
 .growth-scene:after{background:#f4fbf8;animation:scene-wipe 19s linear infinite;opacity:0}
 @keyframes scene-wipe{0%{opacity:1}4%{opacity:0}91%{opacity:0}97%,100%{opacity:1}}
-@media(prefers-reduced-motion:reduce){.growth-scene:after{animation:none;opacity:0}}
+
 </style>

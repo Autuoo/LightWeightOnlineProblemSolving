@@ -8,5 +8,6 @@ public record AdminUserItem(
         String nickname,
         String role,
         Integer status,
+        String avatarUrl,
         LocalDateTime createdAt) {
 }

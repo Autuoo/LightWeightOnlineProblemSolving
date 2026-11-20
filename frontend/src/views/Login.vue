@@ -136,7 +136,7 @@ async function onSubmit() {
 .chapter-enter-active,.chapter-leave-active{transition:opacity .38s,transform .38s}.chapter-enter-from{opacity:0;transform:translateY(28px)}.chapter-leave-to{opacity:0;transform:translateY(-20px)}@keyframes blink{50%{opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes stage-progress{from{width:0}to{width:100%}}
 @media(max-width:960px){.login-page{grid-template-columns:1fr;gap:26px;align-content:start;padding:110px 6vw 75px}.story{max-width:none;padding:0}.chapter{min-height:260px}.chapter-label{margin:22px 0 12px}.chapter h1{font-size:clamp(35px,7vw,58px)}.journey{margin-top:15px}.auth-panel{max-width:520px}.cinema-shade{background:linear-gradient(90deg,#080d14dd,#080d1480),linear-gradient(0deg,#080d14 0%,transparent 38%,#080d14aa 100%)}}
 @media(max-width:600px){.login-page{padding:83px 20px 68px}.topbar,.page-foot{left:20px;right:20px}.topbar{top:21px}.topbar-note{display:none}.page-foot span:last-child{display:none}.eyebrow{font-size:9px}.chapter{min-height:250px}.chapter-label{margin:20px 0 10px}.chapter h1{font-size:36px}.chapter-description{font-size:13px;margin-bottom:14px}.chapter-code{font-size:10px}.journey{margin-top:10px}.auth-panel{padding:24px 20px 18px}.auth-panel h2{margin-top:18px}.panel-bottom{display:none}}
-@media(prefers-reduced-motion:reduce){.chapter-enter-active,.chapter-leave-active{transition:none}.journey-step.current .journey-track span,.code-cursor{animation:none}}
+
 .submit{position:relative;font-size:15px;font-weight:700;letter-spacing:.08em;line-height:1}
 .submit-label{display:block;text-align:center}
 .submit .arrow{position:absolute;right:16px;margin:0;font-size:19px;font-weight:500;line-height:1;transition:transform .2s}
