@@ -41,7 +41,7 @@
             <th v-if="auth.isAdmin" class="c-user">学生</th>
             <th class="c-status">结果</th>
             <th class="c-lang">语言</th>
-            <th class="c-score">得分</th>
+
             <th class="c-time">耗时</th>
             <th class="c-created">提交时间</th>
           </tr>
@@ -60,7 +60,7 @@
               <span
                 v-if="item.suspicious && auth.isAdmin"
                 class="flag"
-                title="疑似打表/硬编码，仅标记，不影响得分"
+                title="疑似打表/硬编码，仅标记，不影响评测结果"
               >
                 可疑
               </span>
@@ -70,12 +70,12 @@
               <StatusBadge :status="item.status" />
             </td>
             <td class="c-lang mono">{{ item.language }}</td>
-            <td class="c-score mono">{{ item.score ?? 0 }}</td>
+
             <td class="c-time mono">{{ item.execTimeMs != null ? item.execTimeMs + ' ms' : '—' }}</td>
             <td class="c-created mono">{{ formatTime(item.createdAt) }}</td>
           </tr>
           <tr v-if="!records.length">
-            <td :colspan="auth.isAdmin ? 8 : 7" class="empty">还没有提交记录</td>
+            <td :colspan="auth.isAdmin ? 7 : 6" class="empty">还没有提交记录</td>
           </tr>
         </tbody>
       </table>

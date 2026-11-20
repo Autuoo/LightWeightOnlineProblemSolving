@@ -91,7 +91,7 @@
               <span>赛制</span>
               <select v-model="form.mode" class="input">
                 <option value="ICPC">ICPC（通过题数 + 罚时）</option>
-                <option value="OI">OI（预留）</option>
+                <option value="OI">OI（按题目分值累加）</option>
               </select>
             </label>
             <label class="field">
@@ -136,7 +136,10 @@
           <div class="picker">
             <div class="picker-head">
               <span>比赛题目</span>
-              <span class="mono">{{ selected.length }} 题 · 按勾选顺序编号 A/B/C</span>
+              <span class="mono">
+                {{ selected.length }} 题 · 按勾选顺序编号 A/B/C
+                <template v-if="form.mode === 'OI'"> · 合计 {{ selectedScoreTotal }} 分</template>
+              </span>
             </div>
             <div class="picker-search">
               <input v-model.trim="problemKeyword" class="input" placeholder="搜索题目名称" />
@@ -152,6 +155,20 @@
                 <span class="pick-index mono">{{ selected.includes(problem.id) ? selected.indexOf(problem.id) + 1 : '—' }}</span>
                 <span class="pick-title">{{ problem.title }}</span>
                 <span class="pick-meta mono">难度 {{ problem.difficulty }}</span>
+                <span
+                  v-if="form.mode === 'OI' && selected.includes(problem.id)"
+                  class="pick-score"
+                  @click.stop
+                >
+                  分值
+                  <input
+                    v-model.number="scoreMap[problem.id]"
+                    class="input score-input mono"
+                    type="number"
+                    min="0"
+                    max="1000"
+                  />
+                </span>
               </label>
               <div v-if="!filteredProblems.length" class="empty-sub">
                 {{ problems.length ? '没有匹配的题目' : '题库为空，先去题目管理创建题目' }}
@@ -206,6 +223,10 @@ const form = reactive({
   published: true
 })
 const selected = ref([])
+const scoreMap = ref({})
+const selectedScoreTotal = computed(() =>
+  selected.value.reduce((sum, problemId) => sum + (Number(scoreMap.value[problemId]) || 0), 0)
+)
 const filteredProblems = computed(() => {
   const kw = problemKeyword.value.trim().toLowerCase()
   if (!kw) return problems.value
@@ -282,6 +303,7 @@ function resetForm() {
   form.password = ''
   form.published = true
   selected.value = []
+  scoreMap.value = {}
   error.value = ''
   ok.value = ''
 }
@@ -301,9 +323,15 @@ async function edit(contest) {
     form.joinType = detail.joinType
     form.password = ''
     form.published = detail.published
-    selected.value = [...(detail.problems || [])]
+    const mappings = [...(detail.problems || [])]
       .sort((a, b) => (a.orderNo || 0) - (b.orderNo || 0))
-      .map((item) => item.problemId)
+    selected.value = mappings.map((item) => item.problemId)
+    scoreMap.value = Object.fromEntries(
+      mappings.map((item) => [
+        item.problemId,
+        item.score ?? (detail.mode === 'OI' ? 100 : null)
+      ])
+    )
     document.querySelector('.form-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   } catch (exception) {
     error.value = exception.message
@@ -316,6 +344,9 @@ function toggleProblem(problemId) {
     selected.value.splice(index, 1)
   } else {
     selected.value.push(problemId)
+    if (form.mode === 'OI' && !Number(scoreMap.value[problemId])) {
+      scoreMap.value[problemId] = 100
+    }
   }
 }
 
@@ -343,6 +374,10 @@ async function save() {
     error.value = '请至少选择一道比赛题目'
     return
   }
+  if (form.mode === 'OI' && selected.value.some((problemId) => !(Number(scoreMap.value[problemId]) > 0))) {
+    error.value = 'OI 赛制下请为每道题填写大于 0 的分值'
+    return
+  }
 
   saving.value = true
   try {
@@ -366,7 +401,8 @@ async function save() {
     await adminContestApi.assignProblems(form.id, {
       problems: selected.value.map((problemId, index) => ({
         problemId,
-        orderNo: index + 1
+        orderNo: index + 1,
+        score: form.mode === 'OI' ? Number(scoreMap.value[problemId]) : null
       }))
     })
     ok.value = '比赛已保存'
@@ -732,6 +768,22 @@ h1 {
 .pick-meta {
   font-size: 10px;
   color: var(--text-faint);
+}
+
+.pick-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--text-faint);
+  flex: 0 0 auto;
+}
+
+.score-input {
+  width: 74px;
+  height: 26px;
+  padding: 0 7px;
+  font-size: 11px;
 }
 
 .error {

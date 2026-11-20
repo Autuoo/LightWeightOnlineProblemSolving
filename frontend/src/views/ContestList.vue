@@ -42,18 +42,18 @@
           <span><b class="mono">{{ contest.problemCount }}</b> 题</span>
           <span><b class="mono">{{ contest.participantCount }}</b> 人</span>
           <span v-if="contest.registered" class="joined">已报名</span>
-          <span v-else-if="contest.phase === 'UPCOMING'" class="open">可报名</span>
+          <span v-else-if="contest.phase !== 'ENDED'" class="open">可报名</span>
         </div>
         <div class="card-foot">
           <span v-if="isLive(contest)" class="countdown mono">{{ countdownText(contest) }}</span>
           <span v-else class="hint">{{ phaseHint(contest) }}</span>
           <div class="actions">
             <button
-              v-if="!contest.registered && contest.phase === 'UPCOMING'"
+              v-if="!contest.registered && contest.phase !== 'ENDED'"
               class="btn btn-primary small"
               @click="openRegister(contest)"
             >
-              报名
+              {{ contest.phase === 'UPCOMING' ? '报名' : '参加' }}
             </button>
             <RouterLink class="btn btn-ghost small" :to="`/contests/${contest.id}`">
               查看
@@ -66,7 +66,7 @@
     <div v-if="registerTarget" class="modal-overlay" @click.self="closeRegister">
       <section class="modal" role="dialog" aria-modal="true" aria-labelledby="register-title">
         <h3 id="register-title">报名「{{ registerTarget.title }}」</h3>
-        <p class="modal-hint">比赛开始前可自助报名；比赛开始后请联系管理员代报名。</p>
+        <p class="modal-hint">比赛结束前均可报名，开始后也能随时参赛。</p>
         <label v-if="registerTarget.joinType === 'PASSWORD'" class="field">
           <span>报名密码</span>
           <input v-model="password" class="input" type="password" placeholder="请输入比赛报名密码" />
@@ -106,7 +106,7 @@ function phaseText(phase) {
 }
 
 function phaseHint(contest) {
-  if (contest.phase === 'UPCOMING') return '开始前可报名'
+  if (contest.phase === 'UPCOMING') return '开始前可报名，开始后也可参赛'
   if (contest.phase === 'ENDED') return '比赛已结束，可查看题目与榜单'
   return ''
 }

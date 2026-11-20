@@ -170,7 +170,8 @@ public class AdminContestService {
 
     @Transactional
     public void assignProblems(Long contestId, ContestProblemAssignRequest request) {
-        requireContest(contestId);
+        Contest contest = requireContest(contestId);
+        boolean oi = "OI".equals(contest.getMode());
         List<ContestProblemAssignRequest.Item> items = request.problems();
         Set<Long> problemIds = items.stream().map(ContestProblemAssignRequest.Item::problemId).collect(Collectors.toSet());
         if (problemIds.size() != items.size()) {
@@ -200,7 +201,10 @@ public class AdminContestService {
             mapping.setProblemId(item.problemId());
             mapping.setAlias(alias);
             mapping.setOrderNo(orderNo);
-            mapping.setScore(item.score());
+            if (oi && (item.score() == null || item.score() <= 0)) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "OI 赛制下每道题都必须设置大于 0 的分值");
+            }
+            mapping.setScore(oi ? item.score() : null);
             mappings.add(mapping);
         }
 

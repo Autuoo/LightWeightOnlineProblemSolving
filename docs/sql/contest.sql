@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS `contest` (
   `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `title`         VARCHAR(128)    NOT NULL                COMMENT '比赛标题',
   `description`   TEXT            NULL                    COMMENT '比赛说明',
-  `mode`          VARCHAR(16)     NOT NULL DEFAULT 'ICPC' COMMENT 'ICPC/ICPC 罚时制；OI 预留',
+  `mode`          VARCHAR(16)     NOT NULL DEFAULT 'ICPC' COMMENT 'ICPC 罚时制；OI 按每题分值累计',
   `start_at`      DATETIME(3)     NOT NULL                COMMENT '开始时间',
   `end_at`        DATETIME(3)     NOT NULL                COMMENT '结束时间',
   `freeze_at`     DATETIME(3)     NULL                    COMMENT '封榜时间，NULL 表示不封榜',

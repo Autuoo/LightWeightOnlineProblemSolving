@@ -7,23 +7,6 @@
 
     <template v-else-if="detail">
       <header class="summary rise">
-        <div class="score-ring">
-          <svg viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r="52" class="ring-bg" />
-            <circle
-              cx="60"
-              cy="60"
-              r="52"
-              class="ring-fg"
-              :class="ringTone"
-              :style="{ strokeDasharray: `${dash} 326.7` }"
-            />
-          </svg>
-          <div class="ring-center">
-            <span class="score mono">{{ detail.score ?? 0 }}</span>
-            <span class="score-label">分</span>
-          </div>
-        </div>
 
         <div class="summary-main">
           <div class="summary-top">
@@ -37,7 +20,7 @@
           <div v-if="auth.isAdmin && detail.suspicious" class="suspicious">
             <span class="suspicious-tag">可疑提交</span>
             <span class="suspicious-reason">
-              {{ detail.suspiciousReason || '命中打表特征，仅标记不影响得分' }}
+              {{ detail.suspiciousReason || '命中打表特征，仅标记不影响评测结果' }}
             </span>
           </div>
           <div class="facts">
@@ -125,18 +108,6 @@ const connected = computed(() => submissionStore.connected)
 const finished = ref(false)
 const live = computed(() => !finished.value && connected.value)
 
-const dash = computed(() => {
-  const score = Math.max(0, Math.min(100, detail.value?.score ?? 0))
-  return (score / 100) * 326.7
-})
-
-const ringTone = computed(() => {
-  const status = detail.value?.status
-  if (status === 'AC') return 'ring-ok'
-  if (status === 'CE' || status === 'RE' || status === 'WA') return 'ring-err'
-  if (status === 'TLE' || status === 'MLE') return 'ring-warn'
-  return 'ring-mute'
-})
 
 const passedCount = computed(
   () => (detail.value?.cases || []).filter((item) => item.status === 'AC').length

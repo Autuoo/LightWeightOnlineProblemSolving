@@ -37,6 +37,13 @@
           </div>
         </div>
       </template>
+
+      <div v-else class="brief-error">
+        <p class="brief-error-text">{{ loadError || '题目加载失败' }}</p>
+        <RouterLink v-if="isContestMode" class="btn btn-ghost" :to="`/contests/${contestId}`">
+          返回比赛详情
+        </RouterLink>
+      </div>
     </section>
 
     <section class="work">
@@ -77,7 +84,7 @@
                   >
                     <StatusBadge :status="item.status" />
                     <span class="history-lang mono">{{ item.language }}</span>
-                    <span class="history-score mono">{{ item.score ?? 0 }} 分</span>
+
                     <span class="history-time mono">{{ formatHistoryTime(item.createdAt) }}</span>
                   </button>
                 </template>
@@ -116,10 +123,7 @@
               <span class="result-id mono">#{{ submissionStore.detail.id }}</span>
             </div>
             <div class="result-right">
-              <span class="metric">
-                <b class="mono">{{ submissionStore.detail.score ?? 0 }}</b>
-                <span class="metric-label">分</span>
-              </span>
+
               <span class="metric">
                 <b class="mono">{{ submissionStore.detail.execTimeMs ?? '—' }}</b>
                 <span class="metric-label">ms</span>
@@ -217,6 +221,7 @@ const md = new MarkdownIt({ html: false, linkify: true, breaks: true })
 
 const problem = ref(null)
 const loading = ref(true)
+const loadError = ref('')
 const language = ref('PYTHON3')
 const submitting = ref(false)
 const submitError = ref('')
@@ -240,6 +245,7 @@ let contestTimer = null
 const contestId = computed(() => (route.params.contestId ? Number(route.params.contestId) : null))
 const isContestMode = computed(() => contestId.value !== null)
 const contestLive = computed(() => contest.value && ['RUNNING', 'FROZEN'].includes(contest.value.phase))
+
 const contestPhaseText = computed(() => {
   const phase = contest.value?.phase
   return { UPCOMING: '即将开始', RUNNING: '进行中', FROZEN: '封榜中', ENDED: '已结束' }[phase] || ''
@@ -443,6 +449,7 @@ async function load() {
   runResult.value = null
   runError.value = ''
   runInput.value = ''
+  loadError.value = ''
   if (contestTimer) {
     clearInterval(contestTimer)
     contestTimer = null
@@ -461,9 +468,10 @@ async function load() {
       problem.value = await problemApi.detail(route.params.id)
       contest.value = null
     }
-  } catch {
+  } catch (exception) {
     problem.value = null
     contest.value = null
+    loadError.value = exception.message || '题目加载失败'
   } finally {
     loading.value = false
   }
@@ -604,6 +612,21 @@ onBeforeUnmount(() => {
 
 .brief-loading {
   padding-top: 6px;
+}
+
+.brief-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 40px 8px;
+}
+
+.brief-error-text {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-dim);
+  line-height: 1.7;
 }
 
 .brief-head h1 {

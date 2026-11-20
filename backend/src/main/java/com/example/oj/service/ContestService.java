@@ -140,7 +140,7 @@ public class ContestService {
                 contest.getJoinType(),
                 true,
                 registered,
-                "UPCOMING".equals(currentPhase) && !registered,
+                !"ENDED".equals(currentPhase) && !registered,
                 participantCount(contestId),
                 problemCount(contestId),
                 visibleProblems);
@@ -149,8 +149,8 @@ public class ContestService {
     public void register(Long contestId, Long userId, ContestRegisterRequest request) {
         Contest contest = requirePublished(contestId);
         LocalDateTime now = LocalDateTime.now();
-        if (!now.isBefore(contest.getStartAt())) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "比赛已开始，无法报名");
+        if (!now.isBefore(contest.getEndAt())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "比赛已结束，无法报名");
         }
         if (isRegistered(contestId, userId)) {
             return;
@@ -180,7 +180,9 @@ public class ContestService {
         if (now.isBefore(contest.getStartAt())) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "比赛尚未开始");
         }
-        requireRegistered(contestId, userId);
+        if (now.isBefore(contest.getEndAt())) {
+            requireRegistered(contestId, userId);
+        }
         long mapped = contestProblemMapper.selectCount(new LambdaQueryWrapper<ContestProblem>()
                 .eq(ContestProblem::getContestId, contestId)
                 .eq(ContestProblem::getProblemId, problemId));
@@ -192,7 +194,9 @@ public class ContestService {
 
     public ContestStandings standings(Long contestId, Long userId) {
         Contest contest = requirePublished(contestId);
-        requireRegistered(contestId, userId);
+        if (LocalDateTime.now().isBefore(contest.getEndAt())) {
+            requireRegistered(contestId, userId);
+        }
         return buildStandings(contest, false);
     }
 
@@ -219,26 +223,41 @@ public class ContestService {
                 new LambdaQueryWrapper<ContestProblem>()
                         .eq(ContestProblem::getContestId, contest.getId())
                         .orderByAsc(ContestProblem::getOrderNo));
-        if (mappings.isEmpty()) {
-            return new ContestStandings(contest.getId(), phase(contest, now), frozen,
-                    contest.getFreezeAt(), now, List.of());
-        }
-
         List<ContestParticipant> participants = participantMapper.selectList(
                 new LambdaQueryWrapper<ContestParticipant>()
                         .eq(ContestParticipant::getContestId, contest.getId()));
-        if (participants.isEmpty()) {
-            return new ContestStandings(contest.getId(), phase(contest, now), frozen,
-                    contest.getFreezeAt(), now, List.of());
+
+        List<ContestStandingItem> items = List.of();
+        if (!mappings.isEmpty() && !participants.isEmpty()) {
+            List<Submission> submissions = submissionMapper.selectList(new LambdaQueryWrapper<Submission>()
+                    .eq(Submission::getContestId, contest.getId())
+                    .ge(Submission::getCreatedAt, contest.getStartAt())
+                    .lt(Submission::getCreatedAt, cutoff)
+                    .in(Submission::getStatus, COUNTED_STATUSES)
+                    .orderByAsc(Submission::getCreatedAt));
+            Map<Long, User> userMap = userMap(participants);
+            if ("OI".equals(contest.getMode())) {
+                items = rankOiItems(mappings, participants, submissions, userMap);
+            } else {
+                items = rankIcpcItems(contest, mappings, participants, submissions, userMap);
+            }
         }
 
-        List<Submission> submissions = submissionMapper.selectList(new LambdaQueryWrapper<Submission>()
-                .eq(Submission::getContestId, contest.getId())
-                .ge(Submission::getCreatedAt, contest.getStartAt())
-                .lt(Submission::getCreatedAt, cutoff)
-                .in(Submission::getStatus, COUNTED_STATUSES)
-                .orderByAsc(Submission::getCreatedAt));
+        return new ContestStandings(contest.getId(), contest.getMode(), phase(contest, now), frozen,
+                contest.getFreezeAt(), now, items);
+    }
 
+    private Map<Long, User> userMap(List<ContestParticipant> participants) {
+        List<Long> userIds = participants.stream().map(ContestParticipant::getUserId).distinct().toList();
+        return userMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+    }
+
+    private List<ContestStandingItem> rankIcpcItems(Contest contest,
+                                                    List<ContestProblem> mappings,
+                                                    List<ContestParticipant> participants,
+                                                    List<Submission> submissions,
+                                                    Map<Long, User> userMap) {
         Map<Long, Map<Long, Attempt>> attempts = new HashMap<>();
         for (Submission submission : submissions) {
             Attempt attempt = attempts
@@ -255,10 +274,6 @@ public class ContestService {
                 }
             }
         }
-
-        List<Long> userIds = participants.stream().map(ContestParticipant::getUserId).distinct().toList();
-        Map<Long, User> userMap = userMapper.selectBatchIds(userIds).stream()
-                .collect(Collectors.toMap(User::getId, Function.identity()));
 
         List<ContestStandingItem> items = new ArrayList<>();
         for (ContestParticipant participant : participants) {
@@ -291,6 +306,7 @@ public class ContestService {
                     user == null ? "-" : user.getNickname(),
                     solved,
                     penalty,
+                    0,
                     lastAcAt,
                     cells));
         }
@@ -299,7 +315,73 @@ public class ContestService {
                 .comparingInt(ContestStandingItem::solved).reversed()
                 .thenComparingInt(ContestStandingItem::penalty)
                 .thenComparing(item -> item.lastAcAt() == null ? LocalDateTime.MAX : item.lastAcAt()));
+        return withRank(items);
+    }
 
+    private List<ContestStandingItem> rankOiItems(List<ContestProblem> mappings,
+                                                  List<ContestParticipant> participants,
+                                                  List<Submission> submissions,
+                                                  Map<Long, User> userMap) {
+        Map<Long, Map<Long, OiAttempt>> attempts = new HashMap<>();
+        for (Submission submission : submissions) {
+            OiAttempt attempt = attempts
+                    .computeIfAbsent(submission.getUserId(), key -> new HashMap<>())
+                    .computeIfAbsent(submission.getProblemId(), key -> new OiAttempt());
+            int score = submission.getScore() == null ? 0 : submission.getScore();
+            if (score > attempt.score) {
+                attempt.score = score;
+            }
+            if ("AC".equals(submission.getStatus())) {
+                attempt.ac = true;
+            }
+            if (attempt.lastAt == null || submission.getCreatedAt().isAfter(attempt.lastAt)) {
+                attempt.lastAt = submission.getCreatedAt();
+            }
+        }
+
+        List<ContestStandingItem> items = new ArrayList<>();
+        for (ContestParticipant participant : participants) {
+            User user = userMap.get(participant.getUserId());
+            int solved = 0;
+            int totalScore = 0;
+            LocalDateTime lastAt = null;
+            Map<Long, OiAttempt> userAttempts = attempts.getOrDefault(participant.getUserId(), Map.of());
+            LinkedHashMap<String, String> cells = new LinkedHashMap<>();
+            for (ContestProblem mapping : mappings) {
+                OiAttempt attempt = userAttempts.get(mapping.getProblemId());
+                if (attempt == null) {
+                    cells.put(mapping.getAlias(), "");
+                    continue;
+                }
+                totalScore += attempt.score;
+                if (attempt.ac) {
+                    solved++;
+                }
+                cells.put(mapping.getAlias(), String.valueOf(attempt.score));
+                if (attempt.lastAt != null && (lastAt == null || attempt.lastAt.isAfter(lastAt))) {
+                    lastAt = attempt.lastAt;
+                }
+            }
+            items.add(new ContestStandingItem(
+                    0,
+                    participant.getUserId(),
+                    user == null ? "-" : user.getUsername(),
+                    user == null ? "-" : user.getNickname(),
+                    solved,
+                    0,
+                    totalScore,
+                    lastAt,
+                    cells));
+        }
+
+        items.sort(Comparator
+                .comparingInt(ContestStandingItem::score).reversed()
+                .thenComparing(Comparator.comparingInt(ContestStandingItem::solved).reversed())
+                .thenComparing(item -> item.lastAcAt() == null ? LocalDateTime.MAX : item.lastAcAt()));
+        return withRank(items);
+    }
+
+    private List<ContestStandingItem> withRank(List<ContestStandingItem> items) {
         List<ContestStandingItem> ranked = new ArrayList<>(items.size());
         for (int index = 0; index < items.size(); index++) {
             ContestStandingItem item = items.get(index);
@@ -310,12 +392,11 @@ public class ContestService {
                     item.nickname(),
                     item.solved(),
                     item.penalty(),
+                    item.score(),
                     item.lastAcAt(),
                     item.problems()));
         }
-
-        return new ContestStandings(contest.getId(), phase(contest, now), frozen,
-                contest.getFreezeAt(), now, ranked);
+        return ranked;
     }
 
     private ContestListItem toListItem(Contest contest, Long userId, LocalDateTime now) {
@@ -412,5 +493,11 @@ public class ContestService {
         private LocalDateTime firstAcAt;
         private int wrong;
         private int tries;
+    }
+
+    private static final class OiAttempt {
+        private int score;
+        private boolean ac;
+        private LocalDateTime lastAt;
     }
 }

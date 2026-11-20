@@ -50,8 +50,11 @@
               <tr>
                 <th class="c-rank">排名</th>
                 <th class="c-user">选手</th>
-                <th class="c-solved">通过</th>
-                <th class="c-penalty">罚时</th>
+                <th v-if="isOi" class="c-solved">总分</th>
+                <template v-else>
+                  <th class="c-solved">通过</th>
+                  <th class="c-penalty">罚时</th>
+                </template>
                 <th v-for="alias in aliases" :key="alias" class="c-problem mono">{{ alias }}</th>
               </tr>
             </thead>
@@ -69,8 +72,11 @@
                     </div>
                   </div>
                 </td>
-                <td class="c-solved mono">{{ item.solved }}</td>
-                <td class="c-penalty mono">{{ item.penalty }}</td>
+                <td v-if="isOi" class="c-solved mono">{{ item.score }}</td>
+                <template v-else>
+                  <td class="c-solved mono">{{ item.solved }}</td>
+                  <td class="c-penalty mono">{{ item.penalty }}</td>
+                </template>
                 <td
                   v-for="alias in aliases"
                   :key="alias"
@@ -85,7 +91,11 @@
         </div>
       </section>
 
-      <p class="footnote">
+      <p v-if="isOi" class="footnote">
+        OI 赛制：每题取最高得分，总分 = 各题得分之和；总分相同比通过题数，再比最后一次有效提交时间。
+        <span v-if="standings.frozen">封榜期间数据可能滞后。</span>
+      </p>
+      <p v-else class="footnote">
         罚时 = 首次通过时间（分钟）+ 20 × 首次通过前的非 AC 提交数；编译错误不计罚时。
         <span v-if="standings.frozen">封榜期间数据可能滞后。</span>
       </p>
@@ -109,6 +119,7 @@ let polling = null
 
 const adminView = computed(() => route.query.admin === '1' && auth.isAdmin)
 const aliases = computed(() => (contest.value?.problems || []).map((item) => item.alias))
+const isOi = computed(() => contest.value?.mode === 'OI')
 
 function phaseText(phase) {
   return { UPCOMING: '即将开始', RUNNING: '进行中', FROZEN: '封榜中', ENDED: '已结束' }[phase] || phase
@@ -141,7 +152,10 @@ function rankClass(rank) {
 }
 
 function cellClass(value) {
-  if (!value) return 'cell-empty'
+  if (value === undefined || value === null || value === '') return 'cell-empty'
+  if (isOi.value) {
+    return Number(value) > 0 ? 'cell-ac' : 'cell-fail'
+  }
   return value.startsWith('+') ? 'cell-ac' : 'cell-fail'
 }
 

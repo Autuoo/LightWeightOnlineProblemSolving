@@ -7,6 +7,7 @@ public record SubmissionDetail(
         Long id,
         Long problemId,
         Long contestId,
+        String contestMode,
         String problemTitle,
         String language,
         String code,

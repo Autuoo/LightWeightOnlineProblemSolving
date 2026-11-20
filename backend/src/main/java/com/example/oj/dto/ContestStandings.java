@@ -5,6 +5,7 @@ import java.util.List;
 
 public record ContestStandings(
         Long contestId,
+        String mode,
         String phase,
         boolean frozen,
         LocalDateTime freezeAt,

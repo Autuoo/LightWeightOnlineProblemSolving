@@ -164,6 +164,12 @@ public class SubmissionService {
         Problem problem = problemMapper.selectById(submission.getProblemId());
         String problemTitle = problem == null ? "" : problem.getTitle();
 
+        String contestMode = null;
+        if (submission.getContestId() != null) {
+            Contest contest = contestMapper.selectById(submission.getContestId());
+            contestMode = contest == null ? null : contest.getMode();
+        }
+
         List<SubmissionCaseResult> caseResults = caseResultMapper.selectList(
                 new LambdaQueryWrapper<SubmissionCaseResult>()
                         .eq(SubmissionCaseResult::getSubmissionId, submissionId)
@@ -188,6 +194,7 @@ public class SubmissionService {
                 submission.getId(),
                 submission.getProblemId(),
                 submission.getContestId(),
+                contestMode,
                 problemTitle,
                 submission.getLanguage(),
                 submission.getCode(),

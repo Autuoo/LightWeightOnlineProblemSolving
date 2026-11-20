@@ -10,6 +10,7 @@ public record ContestStandingItem(
         String nickname,
         int solved,
         int penalty,
+        int score,
         LocalDateTime lastAcAt,
         Map<String, String> problems) {
 }

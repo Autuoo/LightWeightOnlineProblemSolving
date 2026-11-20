@@ -9,7 +9,7 @@
 
     <div v-else-if="error" class="empty-state">
       <p>{{ error }}</p>
-      <button class="btn btn-ghost" @click="load">重试</button>
+      <button class="btn btn-ghost" @click="load()">重试</button>
     </div>
 
     <template v-else-if="contest">
@@ -27,9 +27,11 @@
           <div class="stat"><b class="mono">{{ contest.participantCount }}</b><span>参赛</span></div>
           <div class="stat"><b class="mono">{{ contest.problemCount }}</b><span>题目</span></div>
           <div v-if="isLive" class="countdown mono">{{ countdownText }}</div>
-          <button v-if="contest.canRegister" class="btn btn-primary" @click="showRegister = true">报名比赛</button>
+          <button v-if="contest.canRegister" class="btn btn-primary" @click="showRegister = true">
+            {{ contest.phase === 'UPCOMING' ? '报名比赛' : '参加比赛' }}
+          </button>
           <span v-else-if="contest.registered" class="joined">已报名</span>
-          <span v-else-if="contest.phase === 'ENDED'" class="hint">比赛已结束</span>
+          <span v-else-if="contest.phase === 'ENDED'" class="hint">比赛已结束，题目已公开</span>
         </div>
       </header>
 
@@ -43,14 +45,22 @@
           我的比赛提交
         </RouterLink>
         <span v-if="contest.phase === 'UPCOMING'" class="hint">比赛开始后题目才会公开，可先报名</span>
+        <span v-else-if="!contest.registered && contest.phase !== 'ENDED'" class="hint">你尚未参加本场比赛，点击「参加比赛」后即可进入题目</span>
         <span v-else-if="contest.phase === 'FROZEN'" class="hint">已封榜，公开榜单不再显示封榜后的提交</span>
       </div>
 
       <section class="problems rise" style="animation-delay: 80ms">
         <div class="section-head">
           <h2>比赛题目</h2>
-          <span class="section-sub mono">{{ contest.problems.length }} 题</span>
+          <div class="section-actions">
+            <span class="section-sub mono">{{ visibleProblemCount }} 题</span>
+            <button class="btn btn-primary" :disabled="startDisabled" @click="startContest">
+              {{ startButtonText }}
+            </button>
+          </div>
         </div>
+
+        <p v-if="startHint" class="start-hint">{{ startHint }}</p>
 
         <table v-if="contest.problems.length" class="problem-list">
           <thead>
@@ -81,8 +91,14 @@
         </table>
 
         <div v-else class="empty-problems">
-          <p>比赛尚未开始，题目将在开始后公开</p>
-          <p class="empty-sub">已报名选手届时可直接进入作答</p>
+          <template v-if="contest.phase === 'UPCOMING'">
+            <p>本场比赛共 <b class="mono">{{ contest.problemCount }}</b> 题</p>
+            <p class="empty-sub">题目将在比赛开始后公开，届时点击「开始比赛」即可进入作答</p>
+          </template>
+          <template v-else>
+            <p>本场比赛暂未配置题目</p>
+            <p class="empty-sub">请联系管理员在后台为比赛添加题目</p>
+          </template>
         </div>
       </section>
     </template>
@@ -110,10 +126,11 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { contestApi } from '../api'
 
 const route = useRoute()
+const router = useRouter()
 const contest = ref(null)
 const loading = ref(true)
 const error = ref('')
@@ -122,10 +139,32 @@ const showRegister = ref(false)
 const password = ref('')
 const registering = ref(false)
 const registerError = ref('')
+const startHint = ref('')
 let ticker = null
 let clock = null
+let refreshing = false
+let lastRefreshAt = 0
 
 const isLive = computed(() => contest.value && ['RUNNING', 'FROZEN'].includes(contest.value.phase))
+
+const visibleProblemCount = computed(() => {
+  if (!contest.value) return 0
+  return contest.value.phase === 'UPCOMING' ? contest.value.problemCount : contest.value.problems.length
+})
+
+const startButtonText = computed(() => {
+  const current = contest.value
+  if (!current) return '开始比赛'
+  if (current.phase === 'ENDED') return '查看题目'
+  if (current.phase !== 'UPCOMING' && !current.registered) return '参加比赛'
+  return '开始比赛'
+})
+
+const startDisabled = computed(() => {
+  const current = contest.value
+  if (!current) return true
+  return current.phase !== 'UPCOMING' && !current.problems.length
+})
 
 const countdownText = computed(() => {
   if (!contest.value) return ''
@@ -159,21 +198,59 @@ function formatRange(item) {
   return `${format(item.startAt)} → ${format(item.endAt)}`
 }
 
-async function load() {
-  loading.value = true
+async function load(silent = false) {
+  if (!silent) loading.value = true
   error.value = ''
   try {
     contest.value = await contestApi.detail(route.params.id)
+    startHint.value = ''
   } catch (exception) {
-    error.value = exception.message
-    contest.value = null
+    if (!silent) {
+      error.value = exception.message
+      contest.value = null
+    }
   } finally {
-    loading.value = false
+    if (!silent) loading.value = false
   }
+}
+
+function needsPhaseRefresh() {
+  const current = contest.value
+  if (!current) return false
+  if (current.phase === 'UPCOMING') {
+    return now.value >= new Date(current.startAt).getTime()
+  }
+  if (current.phase === 'RUNNING') {
+    if (now.value >= new Date(current.endAt).getTime()) return true
+    return current.freezeAt ? now.value >= new Date(current.freezeAt).getTime() : false
+  }
+  if (current.phase === 'FROZEN') {
+    return now.value >= new Date(current.endAt).getTime()
+  }
+  return false
 }
 
 function closeRegister() {
   if (!registering.value) showRegister.value = false
+}
+
+function startContest() {
+  const current = contest.value
+  if (!current) return
+  if (current.phase === 'UPCOMING') {
+    startHint.value = '比赛尚未开始，倒计时结束后即可进入作答'
+    return
+  }
+  if (!current.problems.length) {
+    startHint.value = '本场比赛暂未配置题目'
+    return
+  }
+  if (!current.registered && current.phase !== 'ENDED') {
+    startHint.value = ''
+    showRegister.value = true
+    return
+  }
+  router.push(`/contests/${current.id}/problems/${current.problems[0].problemId}`)
 }
 
 async function register() {
@@ -184,6 +261,9 @@ async function register() {
     await contestApi.register(contest.value.id, { password: password.value || null })
     showRegister.value = false
     await load()
+    if (contest.value && contest.value.problems.length) {
+      router.push(`/contests/${contest.value.id}/problems/${contest.value.problems[0].problemId}`)
+    }
   } catch (exception) {
     registerError.value = exception.message
   } finally {
@@ -193,7 +273,14 @@ async function register() {
 
 onMounted(() => {
   load()
-  clock = setInterval(() => { now.value = Date.now() }, 1000)
+  clock = setInterval(() => {
+    now.value = Date.now()
+    if (!refreshing && needsPhaseRefresh() && now.value - lastRefreshAt > 10000) {
+      refreshing = true
+      lastRefreshAt = now.value
+      load(true).finally(() => { refreshing = false })
+    }
+  }, 1000)
 })
 
 onBeforeUnmount(() => {
@@ -360,6 +447,22 @@ onBeforeUnmount(() => {
 .section-sub {
   font-size: 11px;
   color: var(--text-faint);
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.start-hint {
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  font-size: 12.5px;
 }
 
 .problem-list {
